@@ -1,16 +1,31 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import PropTypes from "prop-types";
 import axios from "axios";
-import ProfileImageUploader from "./ProfileImageUploader";
+import ProfileImageUploader from "./ProfileImageUploader"; // Assuming ProfileImageUploader is another component for image upload
 
 function CustomerInfoForm({ onAddCustomer }) {
     // State for form fields
-    const [customerID, setCustomerId] = useState('');
+    const [customerID, setCustomerId] = useState(1); // Start from 1
     const [name, setName] = useState('');
     const [contact, setContact] = useState('');
-    const [company, setCompany] = useState('');
+    const [company, setCompany] = useState([]);
     const [address, setAddress] = useState('');
     const [selectedImage, setSelectedImage] = useState(null); // State for the selected image
+
+    // Fetch the last customerID when component mounts
+    useEffect(() => {
+        const fetchLastCustomerID = async () => {
+            try {
+                const response = await axios.get("http://localhost:8003/getLastCustomerID");
+                const lastCustomerID = response.data.lastCustomerID;
+                setCustomerId(lastCustomerID + 1); // Set the next customer ID
+            } catch (error) {
+                console.error("Error fetching last customer ID:", error);
+            }
+        };
+
+        fetchLastCustomerID();
+    }, []);
 
     // Callback to receive image from ProfileImageUploader
     const handleImageSelect = (imageFile) => {
@@ -20,7 +35,7 @@ function CustomerInfoForm({ onAddCustomer }) {
     const handleSubmit = async (e) => {
         e.preventDefault(); // Prevent default form submission
         try {
-            // Create FormData to include image and other fields
+            // Create FormData for the full user (with image)
             const formData = new FormData();
             formData.append("customerID", customerID);
             formData.append("name", name);
@@ -31,49 +46,61 @@ function CustomerInfoForm({ onAddCustomer }) {
                 formData.append("image", selectedImage); // Append the image if selected
             }
 
-            // POST request to add customer
-            const response = await axios.post("http://localhost:8003/createUser", formData, {
-                headers: {
-                    "Content-Type": "multipart/form-data",
-                },
-            });
-            console.log(response.data);
+            // First POST request: Add full user details
+            const userResponse = await axios.post("http://localhost:8003/createUser", formData);
+            console.log("Full User Created: ", userResponse.data);
+
+            // Second POST request: Add customer data (customerID, name, company) in JSON format
+            // const customerData = {
+            //     customerID,
+            //     name,
+            //     company
+            // };
+
+            // const customerResponse = await axios.post("http://localhost:8003/createCustomer", customerData, {
+            //     headers: {
+            //         "Content-Type": "application/json" // Set content type to JSON
+            //     }
+            // });
+
+            // console.log("Customer Data Added: ", customerResponse.data);
 
             // Callback to notify parent component (if needed)
             if (onAddCustomer) {
-                onAddCustomer(response.data);
+                // Add the customer from the response to the context state (parent state)
+                onAddCustomer(userResponse.data);
             }
 
-            // Reset form fields
-            setCustomerId('');
+            // Reset the form fields after successful submission
+            setCustomerId((prevID) => prevID + 1); // Auto-increment customerID
             setName('');
             setContact('');
             setCompany('');
             setAddress('');
             setSelectedImage(null); // Reset the image
         } catch (error) {
-            console.error("Error adding customer:", error);
+            console.error("Error adding customer:", error.response ? error.response.data : error.message);
         }
     };
 
     return (
         <form
             onSubmit={handleSubmit}
-            className="flex flex-col sm:flex-row items-center justify-between sm:gap-10 lg:gap-16 bg-white"
+            className="flex flex-col xl:flex-row items-center justify-between gap-6 sm:gap-10 xl:gap-16 bg-white p-6 rounded-lg"
         >
             {/* Left Section: Form Fields */}
-            <div className="flex-1 w-2/3 lg:w-1/2 space-y-4">
-                <h2 className="text-3xl font-bold text-[#004D40] pb-2">Customer Information</h2>
+            <div className="flex-1 w-full sm:w-2/3 xl:w-1/2 space-y-6">
+                <h2 className="text-3xl font-bold text-[#004D40] pb-4">Customer Information</h2>
 
-                {/* Customer ID */}
+                {/* Customer ID (Read-only) */}
                 <div className="flex flex-col sm:flex-row sm:items-center">
                     <input
                         type="text"
                         name="customerId"
-                        className="flex-1 px-3 py-2 bg-[#E0F2F1] rounded-lg focus:ring focus:ring-blue-200 placeholder:text-[#004D40]"
+                        className="flex-1 px-3 py-2 bg-gray-200 rounded-lg placeholder:text-gray-500"
                         placeholder="Customer ID"
                         value={customerID}
-                        onChange={(e) => setCustomerId(e.target.value)}
+                        readOnly
                     />
                 </div>
 
@@ -128,14 +155,16 @@ function CustomerInfoForm({ onAddCustomer }) {
                 {/* Submit Button */}
                 <button
                     type="submit"
-                    className="px-4 py-2 bg-[#004D40] text-white rounded-lg hover:bg-[#00332E]"
+                    className="px-6 py-3 bg-[#004D40] text-white rounded-lg hover:bg-[#00332E] w-full sm:w-auto"
                 >
                     Add Customer
                 </button>
             </div>
 
             {/* Right Section: Profile Picture */}
-            <ProfileImageUploader onImageSelect={handleImageSelect} />
+            <div className=" w-full sm:w-1/3 flex justify-center items-center">
+                <ProfileImageUploader onImageSelect={handleImageSelect} />
+            </div>
         </form>
     );
 }

@@ -78,8 +78,8 @@ function Sidebar() {
         },
         {
           id: 4,
-          title: "Hellmark",
-          link: "/hellmark",
+          title: "Hallmark",
+          link: "/hallmark",
         },
       ],
     },
@@ -167,37 +167,40 @@ function Sidebar() {
         {/* Toggle Button */}
         <button
           onClick={toggleSidebar}
-          className="mb-4 p-2 bg-blue-gray-100 rounded hover:bg-blue-gray-200 transition text-[#004D40]"
+          className="p-2 bg-blue-gray-100 rounded hover:bg-blue-gray-200 transition text-[#004D40]"
         >
           {isCollapsed ? "Exp" : "Coll"}
         </button>
 
         {/* Sidebar Menu */}
-        <List>
+        <List
+        className=""
+        >
           {menuItems.map((menuItem) => (
             <Accordion
               key={menuItem.id}
               open={!isCollapsed && open === menuItem.id}
+              className=""
               icon={
                 !isCollapsed && (
                   <ChevronDownIcon
                     strokeWidth={2.5}
-                    className={`mx-auto h-4 w-4 transition-transform text-[#004D40] ${open === menuItem.id ? "rotate-180" : ""
+                    className={`mx-auto h-0 w-4 transition-transform text-[#004D40] ${open === menuItem.id ? "rotate-180" : ""
                       }`}
                   />
                 )
               }
             >
               <ListItem
-                className={`flex items-center text-[#004D40] ${isCollapsed
-                  ? "hover:bg-blue-gray-100 rounded-full p-2 w-12 justify-center text-[#004D40]"
-                  : "hover:bg-blue-gray-50 rounded-lg p-3 text-[#004D40]"
+                className={`flex items-center text-[#004D40] text-xl${isCollapsed
+                  ? "hover:bg-blue-gray-100 rounded-full px-2 w-12 justify-center text-[#004D40] text-xl"
+                  : "hover:bg-blue-gray-50 rounded-lg px-3 text-[#004D40] text-xl"
                   } transition-all`}
                 selected={!isCollapsed && open === menuItem.id}
                 onClick={() => handleIconClick(menuItem.id)}
               >
                 <AccordionHeader
-                  className="border-b-0 text-[#004D40]"
+                  className="border-b-0 text-[#004D40] p-0"
                   onClick={(e) => e.preventDefault()} // Prevent auto toggle
                 >
                   <ListItemPrefix>
@@ -206,7 +209,7 @@ function Sidebar() {
                   {!isCollapsed && (
                     <Typography
                       
-                      className="mr-auto font-normal text-[#004D40]"
+                      className="mr-auto  font-bold text-[#004D40]"
                     >
                       {menuItem.title}
                     </Typography>
@@ -214,7 +217,7 @@ function Sidebar() {
                 </AccordionHeader>
               </ListItem>
               {!isCollapsed && (
-                <AccordionBody className="py-1">
+                <AccordionBody className="py-0">
                   <List className="p-0">
                     {menuItem.items.map((item) => (
                       <ListItem key={item.id}>
@@ -225,8 +228,8 @@ function Sidebar() {
                           />
                         </ListItemPrefix>
                         {item.link ? (
-                          <Link to={item.link}>
-                            {item.title}
+                          <Link to={item.link} className="text-[#004D40]">
+                            {item.title} 
                           </Link>
                         ) : (
                           item.title

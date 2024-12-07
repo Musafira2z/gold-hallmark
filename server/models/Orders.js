@@ -1,13 +1,18 @@
 // models/Xray.js
 const mongoose = require("mongoose");
 
-const xraySchema = new mongoose.Schema(
+const ordersSchema = new mongoose.Schema(
     {
+        name: String,
         customerID: String,
         company: String,
+        contact: Number,
+        address: String,
         item: String,
         quantity: Number,
+        type: String,
         weight: Number,
+        weightUnite: String, // Add weight unit here
         rate: Number,
         amount: Number,
         xray: String,
@@ -17,5 +22,5 @@ const xraySchema = new mongoose.Schema(
     { timestamps: true }
 );
 
-const XrayModel = mongoose.model("Xray", xraySchema);
-module.exports = XrayModel;
+const OrdersModel = mongoose.model("Orders", ordersSchema);
+module.exports = OrdersModel;

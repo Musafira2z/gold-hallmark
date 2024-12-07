@@ -1,11 +1,12 @@
 const mongoose = require('mongoose');
 
 const UserSchema = new mongoose.Schema({
-    customerID:Number,
+    customerID: Number,
     name: String,
     contact: Number,
-    company: String,
-    image: String 
+    company: [String],
+    address: String,
+    image: String
 
 })
 

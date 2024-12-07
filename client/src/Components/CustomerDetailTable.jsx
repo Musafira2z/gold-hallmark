@@ -8,14 +8,12 @@ import axios from "axios";
 import { Bounce, toast, ToastContainer } from "react-toastify";
 
 const TABLE_HEAD = ["Customer Id", "Customer Name", "Contact", "", ""];
-
 export function CustomerDetailTable({ customers, onRemoveCustomer }) {
-
     const handleDelete = async (id) => {
         try {
             // Send DELETE request to the server
             const response = await axios.delete(`http://localhost:8003/deleteUser/${id}`);
-            toast('Delete Successfull', {
+            toast('Delete Successful', {
                 position: "top-right",
                 autoClose: 500,
                 hideProgressBar: false,
@@ -25,8 +23,8 @@ export function CustomerDetailTable({ customers, onRemoveCustomer }) {
                 progress: undefined,
                 theme: "light",
                 transition: Bounce,
-                });
-            console.log(response.data.message); // Log success message (optional)
+            });
+            console.log(response.data.message); // Log success message
 
             // After deleting, call onRemoveCustomer to update the UI in the parent component
             onRemoveCustomer(id);
@@ -34,6 +32,7 @@ export function CustomerDetailTable({ customers, onRemoveCustomer }) {
             console.error("Error deleting customer:", error);
         }
     };
+
 
     return (
         <Card className="h-full w-full overflow-scroll lg:overflow-hidden shadow-none">
@@ -53,19 +52,22 @@ export function CustomerDetailTable({ customers, onRemoveCustomer }) {
                     </tr>
                 </thead>
                 <tbody>
-                    {customers.map(({ _id, customerID, name, contact }, index) => {
+                    {customers.map(({ _id, customerID, name, contact, image }, index) => {
                         const isLast = index === customers.length - 1;
                         const classes = isLast ? "p-4" : "p-4";
 
                         return (
                             <tr key={_id}>
                                 <td className={classes}>
-                                    <Typography
-                                        variant="small"
-                                        className="font-normal text-[#004D40]"
-                                    >
-                                        {customerID}
-                                    </Typography>
+                                    <div className="flex gap-4 items-center">
+                                        <img className="w-10 h-10 rounded-full" src={`http://localhost:8003${image}`} alt="Customer" />
+                                        <Typography
+                                            variant="small"
+                                            className="font-normal text-[#004D40]"
+                                        >
+                                            {customerID}.
+                                        </Typography>
+                                    </div>
                                 </td>
                                 <td className={classes}>
                                     <Typography
@@ -98,7 +100,7 @@ export function CustomerDetailTable({ customers, onRemoveCustomer }) {
                     })}
                 </tbody>
             </table>
-            <ToastContainer/>
+            <ToastContainer />
         </Card>
     );
 }
@@ -106,11 +108,11 @@ export function CustomerDetailTable({ customers, onRemoveCustomer }) {
 CustomerDetailTable.propTypes = {
     customers: PropTypes.arrayOf(
         PropTypes.shape({
-            id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
+            _id: PropTypes.string.isRequired,
+            customerID: PropTypes.string.isRequired,
             name: PropTypes.string.isRequired,
             contact: PropTypes.string.isRequired,
-            company: PropTypes.string,
-            address: PropTypes.string,
+            image: PropTypes.string.isRequired,
         })
     ).isRequired,
     onRemoveCustomer: PropTypes.func.isRequired,

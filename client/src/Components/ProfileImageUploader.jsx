@@ -108,31 +108,33 @@ const ProfileImageUploader = ({ onImageSelect }) => {
         />
       </div>
       {/* Hidden File Input */}
-      <input
-        type="file"
-        ref={fileInputRef}
-        accept="image/*"
-        className="hidden"
-        onChange={handleFileChange}
-      />
-      <div className="flex gap-4">
-        {/* Remove Button */}
-        <button
-          type="button"
-          onClick={handleRemoveImage}
-          className="px-4 py-2 bg-[#6eb8ac] text-white rounded-lg hover:bg-red-100 hover:text-red-600"
-        >
-          Remove
-        </button>
+      <div className="flex flex-col items-center">
+        <input
+          type="file"
+          ref={fileInputRef}
+          accept="image/*"
+          className="hidden"
+          onChange={handleFileChange}
+        />
+        <div className="w-full flex gap-4">
+          {/* Remove Button */}
+          <button
+            type="button"
+            onClick={handleRemoveImage}
+            className="px-4 py-2 bg-[#6eb8ac] text-white rounded-lg hover:bg-red-100 hover:text-red-600"
+          >
+            Remove
+          </button>
 
-        {/* Open Camera Button */}
-        <button
-          type="button"
-          onClick={handleOpenCamera}
-          className="px-4 py-2 bg-[#004D40] text-white rounded-lg hover:bg-[#00332E]"
-        >
-          Open Camera
-        </button>
+          {/* Open Camera Button */}
+          <button
+            type="button"
+            onClick={handleOpenCamera}
+            className="w-full px-4 py-2 bg-[#004D40] text-white rounded-lg hover:bg-[#00332E]"
+          >
+            Camera
+          </button>
+        </div>
       </div>
 
       {/* Camera Modal */}

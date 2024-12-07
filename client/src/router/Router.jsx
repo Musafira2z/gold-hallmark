@@ -5,6 +5,7 @@ import DaySummary from "../Components/DaySummary";
 import UpdateUser from "../Components/UpdateUser";
 import XRay from "../pages/Xray";
 import Hallmark from "../pages/Hallmark";
+import Invoice from "../pages/Invoice";
 
 const router = createBrowserRouter([
     {
@@ -24,13 +25,17 @@ const router = createBrowserRouter([
                 element: <XRay />
             },
             {
-                path: "/hellmark",
+                path: "/hallmark",
                 element: <Hallmark />
             },
             {
                 path: "/summary",
                 element: <DaySummary />
             },
+            {
+                path: "/invoice/:id", // Invoice page route
+                element: <Invoice />,
+              },
         ]
     },
 ]);

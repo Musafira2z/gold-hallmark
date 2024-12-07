@@ -3,16 +3,16 @@ import Sidebar from "./Components/Sidebar";
 import Navbar from "./Components/Navbar";
 function App() {
   return (
-    <div className="w-full bg-[#E0F2F1]">
+    <div className=" bg-[#E0F2F1]">
       <div className="w-[100%]">
-      <Navbar />
+        <Navbar />
       </div>
       <div className="lg:flex">
-        <div className="ml-2 lg:ml-10 my-10">
+        <div className="ml-2 lg:ml-12 my-10">
           <Sidebar />
         </div>
         <div className="w-full ">
-          <div className="mx-2 lg:mx-10">
+          <div className="mx-2 lg:mx-8">
             <Outlet />
           </div>
         </div>

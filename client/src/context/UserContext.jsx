@@ -18,10 +18,28 @@ const UserContextProvider = ({ children }) => {
         };
         fetchCustomers();
     }, []);
+    const [userCustomers, setUserCustomers] = useState([]);
+    useEffect(() => {
+        const fetchCustomers = async () => {
+            try {
+                const response = await fetch('http://localhost:8003/getLastCustomerID');
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                const data = await response.json();
+                setUserCustomers(data);
+            } catch (error) {
+                console.error('Error fetching customers:', error);
+            }
+        };
+        fetchCustomers();
+    }, []);
 
     const value = {
         customers,
-        setCustomers
+        setCustomers,
+        userCustomers,
+        setUserCustomers
     }
     return (
         <UserContext.Provider value={value}>

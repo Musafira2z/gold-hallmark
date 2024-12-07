@@ -18,8 +18,8 @@ const Home = () => {
 
     return (
         <div className="py-10 bg-[#E0F2F1] overflow-x-scroll p-6">
-            <div className="flex flex-col gap-10 p-10 bg-white rounded-lg">
-                <CustomerInfoForm onAddCustomer={onAddCustomer} />
+            <div className="flex flex-col gap-10 p-2 lg:p-10 bg-white rounded-lg">
+                <CustomerInfoForm customers={customers} onAddCustomer={onAddCustomer} />
                 <CustomerDetailTable customers={customers} onRemoveCustomer={removeCustomer} />
             </div>
         </div>
