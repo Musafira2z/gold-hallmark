@@ -1,7 +1,7 @@
 import axios from "axios";
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-
+import "./print.css"
 const Invoice = () => {
     const { id } = useParams(); // Get the order ID from the URL
     const [order, setOrder] = useState(null);
@@ -22,7 +22,7 @@ const Invoice = () => {
     useEffect(() => {
         if (order) {
             // Wait for the order data to load and then trigger print
-            window.print();
+            window.print("print-content");
         }
     }, [order]);
 
@@ -31,8 +31,8 @@ const Invoice = () => {
     }
 
     return (
-        <div className="bg-[#E0F2F1] h-[100vh] -mt-10 pt-20">
-            <div className="bg-white px-20 py-10 pt-36 rounded-lg shadow-lg mt-10 max-w-6xl mx-auto border border-gray-200 mb-48">
+        <div className="bg-[#E0F2F1] h-[100vh] -mt-10 pt-20 print-content">
+            <div className="bg-white px-20 py-10 pt-36 rounded-lg mt-10 max-w-6xl mx-auto mb-48">
                 <h2 className="text-lg font-bold mb-4">Customer Profile</h2>
                 <div className="grid grid-cols-2 gap-4 mb-4">
                     <div>

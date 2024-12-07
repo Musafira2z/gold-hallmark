@@ -1,27 +1,25 @@
+/* This will hide everything else during printing */
 @media print {
-    /* Hide the body background */
-    body {
-      background: none !important;
+    body * {
+      visibility: hidden;
     }
   
-    /* Hide everything except the invoice container */
-    .no-print {
-      display: none !important;
+    .print-content, .print-content * {
+      visibility: visible;
     }
   
-    /* Adjust the layout for printing */
-    .invoice-container {
+    /* Ensure the printed content takes up the full page */
+    .print-content {
       width: 100%;
       max-width: none;
       padding: 0;
       box-shadow: none;
       border: none;
-      margin: 0;
     }
   
-    /* Adjust the margins and padding for printing if needed */
-    .invoice-container h2 {
-      margin-top: 0;
+    /* Remove any margins or unnecessary whitespace */
+    @page {
+      margin: 0;
     }
   }
   

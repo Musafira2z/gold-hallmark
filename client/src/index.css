@@ -1,3 +1,35 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@media print {
+    /* Hide everything else except the print-content div */
+    body * {
+      visibility: hidden;
+    }
+    
+    .print-content, .print-content * {
+      visibility: visible;
+    }
+  
+    /* Ensure the print-content takes full page size */
+    .print-content {
+      width: 100%;
+      height: auto;
+      max-width: none;
+      padding: 0;
+      box-shadow: none;
+      border: none;
+    }
+  
+    /* Optional: Remove unnecessary margins or padding for better layout in print */
+    .print-content h2 {
+      margin-top: 0;
+    }
+  
+    /* Hide page breaks */
+    .no-print {
+      display: none;
+    }
+  }
+  
