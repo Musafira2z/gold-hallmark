@@ -1,0 +1,27 @@
+@media print {
+    /* Hide the body background */
+    body {
+      background: none !important;
+    }
+  
+    /* Hide everything except the invoice container */
+    .no-print {
+      display: none !important;
+    }
+  
+    /* Adjust the layout for printing */
+    .invoice-container {
+      width: 100%;
+      max-width: none;
+      padding: 0;
+      box-shadow: none;
+      border: none;
+      margin: 0;
+    }
+  
+    /* Adjust the margins and padding for printing if needed */
+    .invoice-container h2 {
+      margin-top: 0;
+    }
+  }
+  

@@ -39,7 +39,7 @@ const OrderDetailPage = ({ newOrderData }) => {
   const totalPages = Math.ceil(filteredData.length / itemsPerPage); // Total number of pages
 
   return (
-    <Card className="h-full w-full">
+    <Card className="h-full w-full"  id='printablediv'> 
       <CardBody className="overflow-scroll px-4">
         <div className="pb-4 pt-2">
           <h2 className="text-2xl text-[#004D40] font-semibold">
