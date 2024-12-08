@@ -1,9 +1,9 @@
-import React, { useContext, useEffect, useState } from "react";
-import { UserContext } from "../context/userContext";
+import React, {useContext, useEffect, useState} from "react";
 import axios from "axios";
-import { useNavigate } from "react-router-dom";
+import {useNavigate} from "react-router-dom";
 import Select from "react-select"; // Import react-select
-import OrderDetailPage from "../Components/OrderDetailsPag";
+import OrderDetailPage from "../components/OrderDetailsPag";
+import {apiUrl, UserContext} from "../context/UserContext.jsx";
 
 const Hallmark = () => {
   const { customers } = useContext(UserContext);
@@ -87,7 +87,7 @@ const Hallmark = () => {
     });
 
     try {
-      const response = await axios.post("http://localhost:8003/orders", data, {
+      const response = await axios.post(`${apiUrl}/orders`, data, {
         headers: {
           "Content-Type": "multipart/form-data",
         },
@@ -123,7 +123,7 @@ const Hallmark = () => {
   useEffect(() => {
     const fetchOrderData = async () => {
       try {
-        const response = await axios.get("http://localhost:8003/orders");
+        const response = await axios.get("${apiUrl}/orders");
         setOrdersData(response.data);
       } catch (error) {
         console.error("Error fetching X-ray data:", error);

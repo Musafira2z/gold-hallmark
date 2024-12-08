@@ -2,6 +2,7 @@ import axios from "axios";
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import "./print.css"
+import {apiUrl} from "../context/UserContext.jsx";
 const Invoice = () => {
     const { id } = useParams(); // Get the order ID from the URL
     const [order, setOrder] = useState(null);
@@ -9,7 +10,7 @@ const Invoice = () => {
     useEffect(() => {
         const fetchOrderData = async () => {
             try {
-                const response = await axios.get(`http://localhost:8003/orders/${id}`);
+                const response = await axios.get(`${apiUrl}/orders/${id}`);
                 setOrder(response.data);
             } catch (error) {
                 console.error("Error fetching invoice data:", error);

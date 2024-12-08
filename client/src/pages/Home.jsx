@@ -1,10 +1,10 @@
-import React, { useContext } from "react";
-import CustomerInfoForm from "../Components/CustomerInfoForm";
-import { CustomerDetailTable } from "../Components/CustomerDetailTable";
-import { UserContext } from "../context/userContext";
+import React, {useContext} from "react";
+import CustomerInfoForm from "../components/CustomerInfoForm";
+import {CustomerDetailTable} from "../components/CustomerDetailTable";
+import {UserContext} from "../context/UserContext.jsx";
 
 const Home = () => {
-    const { customers, setCustomers } = useContext(UserContext);
+    const {customers, setCustomers} = useContext(UserContext);
 
     const onAddCustomer = (newCustomer) => {
         setCustomers((prevCustomers) => [...prevCustomers, newCustomer]);
@@ -19,8 +19,8 @@ const Home = () => {
     return (
         <div className="py-10 bg-[#E0F2F1] overflow-x-scroll p-6">
             <div className="flex flex-col gap-10 p-2 lg:p-10 bg-white rounded-lg">
-                <CustomerInfoForm customers={customers} onAddCustomer={onAddCustomer} />
-                <CustomerDetailTable customers={customers} onRemoveCustomer={removeCustomer} />
+                <CustomerInfoForm customers={customers} onAddCustomer={onAddCustomer}/>
+                <CustomerDetailTable customers={customers} onRemoveCustomer={removeCustomer}/>
             </div>
         </div>
     );
