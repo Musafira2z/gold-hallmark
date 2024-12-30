@@ -2,7 +2,7 @@ version: '3.9'
 
 services:
   client:
-    image: programminghero/client:latest
+    image: programminghero/gold-client:latest
     build:
       context: ./client
       dockerfile: Dockerfile
@@ -16,7 +16,7 @@ services:
       - server
 
   server:
-    image: programminghero/server:latest
+    image: programminghero/gold-server:latest
     build:
       context: ./server
       dockerfile: Dockerfile
