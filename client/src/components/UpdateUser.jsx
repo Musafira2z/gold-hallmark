@@ -1,46 +1,91 @@
-import React, {useContext, useState, useEffect} from "react";
+import React, { useContext, useState, useEffect } from "react";
 import PropTypes from "prop-types";
 import ProfileImageUploader from "./ProfileImageUploader";
-import {useParams} from "react-router-dom";
+import { useParams } from "react-router-dom";
 import axios from "axios";
-import {Bounce, toast, ToastContainer} from "react-toastify";
-import {UserContext} from "../context/UserContext.jsx";
+import { Bounce, toast, ToastContainer } from "react-toastify";
+import { apiUrl, UserContext } from "../context/UserContext.jsx";
+import ProfileImageUpdate from "./ProfileImageUpdate.jsx";
+
 
 function UpdateUser() {
-    const {customers, setCustomers} = useContext(UserContext);
-    const {id} = useParams();
-
+    const { customers, setCustomers } = useContext(UserContext);
+    const { id } = useParams();
     const singleCustomer = customers.find((item) => item._id === id);
+    const [selectedImage, setSelectedImage] = useState(null);
+
+    console.log("Selected Image:", selectedImage);
 
     const [customer, setCustomer] = useState({
         customerID: "",
         name: "",
         contact: "",
-        company: "",
+        company: [], // Changed to an array for multiple companies
         address: "",
+        image: null,
     });
 
     // Pre-fill form when customer is found
     useEffect(() => {
         if (singleCustomer) {
-            setCustomer(singleCustomer);
+            setCustomer({
+                ...singleCustomer,
+                company: Array.isArray(singleCustomer.company)
+                    ? singleCustomer.company
+                    : [singleCustomer.company],
+            });
         }
     }, [singleCustomer]);
-
+    const handleImageSelect = (imageFile) => {
+        if (imageFile) {
+            console.log("Image file received:", imageFile);
+            setSelectedImage(imageFile);
+        }
+    };
     const handleChange = (e) => {
-        setCustomer({...customer, [e.target.name]: e.target.value});
+        setCustomer({ ...customer, [e.target.name]: e.target.value });
+    };
+
+    const handleAddTag = (e) => {
+        if (e.key === "," && e.target.value.trim() !== "") {
+            setCustomer({
+                ...customer,
+                company: [...customer.company, e.target.value.trim()],
+            });
+            e.target.value = ""; // Clear the input
+        }
+    };
+
+    const handleRemoveTag = (index) => {
+        setCustomer({
+            ...customer,
+            company: customer.company.filter((_, i) => i !== index),
+        });
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
-            const response = await axios.put(`${apiUrl}/updateUser/${id}`, customer);
-
-            // Update the context state with new customer data
+            const formData = new FormData();
+            formData.append("customerID", customer.customerID);
+            formData.append("name", customer.name);
+            formData.append("contact", customer.contact);
+            customer.company.forEach((comp) => formData.append("company[]", comp));
+            formData.append("address", customer.address);
+            if (selectedImage) {
+                formData.append("image", selectedImage);
+            }
+    
+            const response = await axios.put(`${apiUrl}/users/update/${id}`, formData, {
+                headers: {
+                    "Content-Type": "multipart/form-data"
+                }
+            });
+    
             setCustomers((prevCustomers) =>
                 prevCustomers.map((cust) => (cust._id === id ? response.data : cust))
             );
-
+    
             console.log("Customer updated successfully:", response.data);
             toast("User updated successfully", {
                 position: "top-right",
@@ -51,9 +96,8 @@ function UpdateUser() {
                 draggable: true,
                 progress: undefined,
                 theme: "light",
-                transition: Bounce
+                transition: Bounce,
             });
-
         } catch (error) {
             console.error("Error updating customer:", error);
         }
@@ -111,16 +155,32 @@ function UpdateUser() {
                         />
                     </div>
 
-                    {/* Company */}
-                    <div className="flex flex-col sm:flex-row sm:items-center">
-                        <input
-                            type="text"
-                            name="company"
-                            className="flex-1 px-3 py-2 bg-[#E0F2F1] rounded-lg focus:ring focus:ring-blue-200 placeholder:text-[#004D40]"
-                            placeholder="Company Name"
-                            value={customer.company}
-                            onChange={handleChange}
-                        />
+                    {/* Custom Tag Input for Companies */}
+                    <div className="flex flex-col space-y-2">
+                        <label className="text-[#004D40]">Company Names</label>
+                        <div className="flex flex-wrap gap-2 border rounded-lg p-2 bg-[#E0F2F1]">
+                            {customer.company.map((tag, index) => (
+                                <span
+                                    key={index}
+                                    className="bg-[#004D40] text-white px-3 py-1 rounded-full flex items-center gap-2"
+                                >
+                                    {tag}
+                                    <button
+                                        type="button"
+                                        onClick={() => handleRemoveTag(index)}
+                                        className="text-sm bg-red-500 hover:bg-red-600 rounded-full px-2"
+                                    >
+                                        ×
+                                    </button>
+                                </span>
+                            ))}
+                            <input
+                                type="text"
+                                placeholder="Add a company and press Enter"
+                                className="flex-1 px-2 py-1 bg-transparent outline-none"
+                                onKeyDown={handleAddTag}
+                            />
+                        </div>
                     </div>
 
                     {/* Address */}
@@ -145,9 +205,9 @@ function UpdateUser() {
                 </div>
 
                 {/* Right Section: Profile Picture */}
-                <ProfileImageUploader/>
+                <ProfileImageUpdate onImageSelect={handleImageSelect}/>
             </form>
-            <ToastContainer/>
+            <ToastContainer />
         </div>
     );
 }

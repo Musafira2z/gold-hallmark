@@ -20,7 +20,12 @@ exports.createUser = async (req, res) => {
 
 exports.updateUser = async (req, res) => {
     try {
-        const updatedUser = await UserService.updateUser(req.params.id, req.body);
+        const updatedData = {
+            ...req.body,
+            image: req.file ? `/uploads/${req.file.filename}` : req.body.image
+        };
+
+        const updatedUser = await UserService.updateUser(req.params.id, updatedData);
         res.json(updatedUser);
     } catch (error) {
         res.status(500).json({ error: "Failed to update user", details: error });

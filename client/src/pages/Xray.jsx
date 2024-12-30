@@ -1,9 +1,9 @@
-import React, {useContext, useEffect, useState} from "react";
+import React, { useContext, useEffect, useState } from "react";
 import axios from "axios";
-import {useNavigate} from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import Select from "react-select"; // Import react-select
 import OrderDetailPage from "../components/OrderDetailsPag";
-import {apiUrl, UserContext} from "../context/UserContext.jsx";
+import { apiUrl, UserContext } from "../context/UserContext.jsx";
 
 const Hallmark = () => {
   const { customers } = useContext(UserContext);
@@ -113,7 +113,12 @@ const Hallmark = () => {
         address: "",
       });
       setImageName(""); // Reset image name after submission
-      navigate(`/invoice/${response.data._id}`);
+      const invoiceUrl = `/invoice/${response.data._id}`;
+      const newTab = window.open(invoiceUrl, "_blank");
+
+      if (!newTab) {
+        alert("Failed to open new tab. Please allow popups for this site.");
+      }
     } catch (error) {
       console.error("Error uploading data:", error);
     }
@@ -123,7 +128,7 @@ const Hallmark = () => {
   useEffect(() => {
     const fetchOrderData = async () => {
       try {
-        const response = await axios.get("${apiUrl}/orders");
+        const response = await axios.get(`${apiUrl}/orders`);
         setOrdersData(response.data);
       } catch (error) {
         console.error("Error fetching X-ray data:", error);

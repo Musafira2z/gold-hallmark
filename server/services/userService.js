@@ -14,7 +14,7 @@ exports.createUser = async (userData, file) => {
 };
 
 exports.updateUser = async (id, updatedData) => {
-    return User.findByIdAndUpdate(id, updatedData, {new: true});
+    return User.findByIdAndUpdate(id, updatedData, { new: true });
 };
 
 exports.deleteUser = async (id) => {
@@ -22,6 +22,6 @@ exports.deleteUser = async (id) => {
 };
 
 exports.getLastCustomerID = async () => {
-    const lastCustomer = await User.findOne().sort({customerID: -1}).limit(1);
+    const lastCustomer = await User.findOne().sort({ customerID: -1 }).limit(1);
     return lastCustomer ? lastCustomer.customerID : 0;
 };

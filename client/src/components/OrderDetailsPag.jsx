@@ -43,7 +43,7 @@ const OrderDetailPage = ({ newOrderData }) => {
       <CardBody className="overflow-scroll px-4">
         <div className="pb-4 pt-2">
           <h2 className="text-2xl text-[#004D40] font-semibold">
-            Order Details of Xray Data.
+            Order Details of Hallmark Data.
           </h2>
         </div>
         <div className="w-full mb-4">
@@ -77,7 +77,7 @@ const OrderDetailPage = ({ newOrderData }) => {
           </thead>
           <tbody>
             {currentItems.map(
-              ({ customerID, name, company, item, weight, quantity,weightUnite, amount, date }, index) => {
+              ({ customerID, name, company, item, weight, quantity,weightUnite, amount, customerFrom }, index) => {
                 const isLast = index === currentItems.length - 1;
                 const classes = isLast ? "p-4" : "p-4 border-b border-[#004D40]";
                 return (
@@ -114,7 +114,7 @@ const OrderDetailPage = ({ newOrderData }) => {
                     </td>
                     <td className={classes}>
                       <Typography variant="small" color="blue-gray" className="font-normal">
-                        {new Date(date).toLocaleDateString()}
+                        {new Date(customerFrom).toLocaleDateString()}
                       </Typography>
                     </td>
                   </tr>

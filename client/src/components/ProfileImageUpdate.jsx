@@ -18,18 +18,18 @@ const ProfileImageUploader = ({ onImageSelect }) => {
   const handleFileChange = (event) => {
     const file = event.target.files[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        setImage(e.target.result); // Update state with the selected image's data URL
-      };
-      reader.readAsDataURL(file);
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            setImage(e.target.result);
+        };
+        reader.readAsDataURL(file);
 
-      // Pass the selected file to the parent component
-      if (onImageSelect) {
-        onImageSelect(file);
-      }
+        if (onImageSelect) {
+            console.log("File selected:", file);
+            onImageSelect(file); // Pass the file to the parent
+        }
     }
-  };
+};
 
   // Handle image removal
   const handleRemoveImage = () => {

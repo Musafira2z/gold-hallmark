@@ -6,7 +6,7 @@ export const UserContext = createContext();
 
 // Get the base URL from the environment variable
 // eslint-disable-next-line no-undef,react-refresh/only-export-components
-export const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000'; // Fallback to localhost if not defined
+export const apiUrl = import.meta.env.REACT_APP_API_URL || 'http://localhost:5000'; // Fallback to localhost if not defined
 
 const UserContextProvider = ({children}) => {
     const [customers, setCustomers] = useState([]);
@@ -20,7 +20,7 @@ const UserContextProvider = ({children}) => {
                 // Fetch customers and last customer ID in parallel
                 const [customersResponse, lastCustomerIDResponse] = await Promise.all([
                     fetch(`${apiUrl}/users`),
-                    fetch(`${apiUrl}/getLastCustomerID`)
+                    fetch(`${apiUrl}/users/lastCustomerID`)
                 ]);
 
                 if (!customersResponse.ok || !lastCustomerIDResponse.ok) {

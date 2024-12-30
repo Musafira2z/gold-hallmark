@@ -1,12 +1,12 @@
-import React, {useContext, useEffect, useState} from "react";
+import React, { useContext, useEffect, useState } from "react";
 import axios from "axios";
-import {useNavigate} from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import Select from "react-select"; // Import react-select
 import OrderDetailPage from "../components/OrderDetailsPag";
-import {apiUrl, UserContext} from "../context/UserContext.jsx";
+import { apiUrl, UserContext } from "../context/UserContext.jsx";
 
 const Hallmark = () => {
-    const {customers} = useContext(UserContext);
+    const { customers } = useContext(UserContext);
     const [ordersData, setOrdersData] = useState([]);
     const [formData, setFormData] = useState({
         name: "",
@@ -35,7 +35,7 @@ const Hallmark = () => {
 
     // Handle form input change
     const handleInputChange = (e) => {
-        const {id, value, files} = e.target;
+        const { id, value, files } = e.target;
 
         if (id === "image") {
             setFormData((prevData) => ({
@@ -46,7 +46,7 @@ const Hallmark = () => {
         } else if (id === "quantity" || id === "rate") {
             const parsedValue = parseFloat(value) || 0;
             setFormData((prevData) => {
-                const newData = {...prevData, [id]: parsedValue};
+                const newData = { ...prevData, [id]: parsedValue };
                 if (newData.quantity && newData.rate) {
                     newData.amount = (parseFloat(newData.quantity) * parseFloat(newData.rate)).toFixed(2);
                 }
@@ -113,7 +113,12 @@ const Hallmark = () => {
                 address: "",
             });
             setImageName(""); // Reset image name after submission
-            navigate(`/invoice/${response.data._id}`);
+            const invoiceUrl = `/invoice/${response.data._id}`;
+            const newTab = window.open(invoiceUrl, "_blank");
+
+            if (!newTab) {
+                alert("Failed to open new tab. Please allow popups for this site.");
+            }
         } catch (error) {
             console.error("Error uploading data:", error);
         }
@@ -142,7 +147,7 @@ const Hallmark = () => {
     // Open the camera modal
     const openCamera = () => {
         setIsModalOpen(true);
-        navigator.mediaDevices.getUserMedia({video: true})
+        navigator.mediaDevices.getUserMedia({ video: true })
             .then((stream) => {
                 setCameraStream(stream);
             })
@@ -168,7 +173,7 @@ const Hallmark = () => {
 
         // Convert canvas data to Blob
         canvas.toBlob((blob) => {
-            const file = new File([blob], "captured-image.png", {type: "image/png"});
+            const file = new File([blob], "captured-image.png", { type: "image/png" });
             setCapturedImage(URL.createObjectURL(blob)); // Show preview if needed
             setImageName("captured-image.png"); // Set the file name
             setFormData((prevData) => ({
@@ -398,7 +403,7 @@ const Hallmark = () => {
 
                 <div className="border-2 border-[#004D40] p-4 mt-6 rounded-lg">
                     {/* <XrayDetailsTable ordersData={newOrderData} /> */}
-                    <OrderDetailPage newOrderData={newOrderData}/>
+                    <OrderDetailPage newOrderData={newOrderData} />
                 </div>
             </div>
         </div>

@@ -13,7 +13,7 @@ export function CustomerDetailTable({ customers, onRemoveCustomer }) {
     const handleDelete = async (id) => {
         try {
             // Send DELETE request to the server
-            const response = await axios.delete(`${apiUrl}/deleteUser/${id}`);
+            const response = await axios.delete(`${apiUrl}/users/delete/${id}`);
             toast('Delete Successful', {
                 position: "top-right",
                 autoClose: 500,
