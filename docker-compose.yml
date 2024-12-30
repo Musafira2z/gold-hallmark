@@ -1,0 +1,37 @@
+version: '3.9'
+
+services:
+  client:
+    image: programminghero/client:latest
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+      args:
+        REACT_APP_API_URL: http://server:5000
+    ports:
+      - "3001:80" # Map port 80 from the container to 3000 on the host
+    environment:
+      REACT_APP_API_URL: http://server:5000
+    depends_on:
+      - server
+
+  server:
+    image: programminghero/server:latest
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    ports:
+      - "5000:5000" # Map port 5000 from the container to 5000 on the host
+    environment:
+      MONGO_URI: mongodb://mongo:27017/goldhallmark
+    depends_on:
+      - mongo
+
+  mongo:
+    image: mongo:7
+    container_name: mongodb
+    volumes:
+      - mongo-data:/data/db
+
+volumes:
+  mongo-data:
