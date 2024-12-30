@@ -2,6 +2,7 @@ import axios from "axios";
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import "./print.css"
+import { apiUrl } from "../context/UserContext.jsx";
 const Invoice = () => {
     const { id } = useParams(); // Get the order ID from the URL
     const [order, setOrder] = useState(null);
@@ -9,22 +10,22 @@ const Invoice = () => {
     useEffect(() => {
         const fetchOrderData = async () => {
             try {
-                const response = await axios.get(`http://localhost:8003/orders/${id}`);
+                const response = await axios.get(`${apiUrl}/orders/${id}`);
                 setOrder(response.data);
+                const image = new Image();
+                image.src = `${apiUrl}${response.data.image}`;
+                image.onload = function () {
+                    window.print();
+                    window.onafterprint = () => {
+                        window.close();
+                    };
+                };
             } catch (error) {
-                console.error("Error fetching invoice data:", error);
+                console.error("Error fetching data:", error);
             }
         };
-
         fetchOrderData();
     }, [id]);
-
-    useEffect(() => {
-        if (order) {
-            // Wait for the order data to load and then trigger print
-            window.print("print-content");
-        }
-    }, [order]);
 
     if (!order) {
         return <div>Loading...</div>;
@@ -86,7 +87,7 @@ const Invoice = () => {
                             <td className="border border-gray-300 px-4 py-2"> {order?.item} </td>
                             <td className="border border-gray-300 px-4 py-2">{order?.quantity}</td>
                             <td className="border border-gray-300 px-4 py-2">{order?.rate}</td>
-                            <td className="border border-gray-300 px-4 py-2">{order?.weight}</td>
+                            <td className="border border-gray-300 px-4 py-2">{order?.weight}{order?.weightUnite}</td>
                             <td className="border border-gray-300 px-4 py-2">{order?.xray}</td>
                             <td className="border border-gray-300 px-4 py-2">{order?.amount}</td>
                         </tr>
@@ -123,9 +124,14 @@ const Invoice = () => {
                         <p>Authorized Signature</p>
                     </div>
                 </div>
+                <div className="w-full flex justify-center mt-10 p-4">
+                    <img className="w-full h-[320px]" src={`${apiUrl}${order.image}`} alt="" />
+                </div>
             </div>
+
         </div>
     );
+
 };
 
 export default Invoice;
