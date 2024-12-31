@@ -4,13 +4,13 @@ import PropTypes from "prop-types";
 
 const TABLE_HEAD = ["CustomerID", "Item", "Weight", "Quantity", "Amount", "Date"];
 
-const OrderDetailPage = ({ newOrderData }) => {
+const OrderDetailPage = ({ newOrderData,title }) => {
   const [searchQuery, setSearchQuery] = useState(""); // State for the search input
   const [currentPage, setCurrentPage] = useState(1); // Current page state
   const itemsPerPage = 5; // Items per page
 
   // Filter the data based on the search query (customer name and company)
-  const filteredData = newOrderData.filter(({ name, company }) => {
+  const filteredData = (newOrderData || []).filter(({ name = "", company = "" }) => {
     const lowerSearchQuery = searchQuery.toLowerCase();
     return (
       name.toLowerCase().includes(lowerSearchQuery) ||
@@ -43,7 +43,7 @@ const OrderDetailPage = ({ newOrderData }) => {
       <CardBody className="overflow-scroll px-4">
         <div className="pb-4 pt-2">
           <h2 className="text-2xl text-[#004D40] font-semibold">
-            Order Details of Hallmark Data.
+            Order Details of {title} Data.
           </h2>
         </div>
         <div className="w-full mb-4">
@@ -151,6 +151,7 @@ const OrderDetailPage = ({ newOrderData }) => {
 
 // Define PropTypes for the component
 OrderDetailPage.propTypes = {
+  title: PropTypes.string,
   newOrderData: PropTypes.arrayOf(
     PropTypes.shape({
       customerID: PropTypes.string.isRequired,
@@ -161,6 +162,7 @@ OrderDetailPage.propTypes = {
       quantity: PropTypes.number.isRequired,
       amount: PropTypes.string.isRequired,
       date: PropTypes.string.isRequired,
+      
     })
   ).isRequired,
 };
