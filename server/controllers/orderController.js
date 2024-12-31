@@ -11,10 +11,13 @@ exports.getOrders = async (req, res) => {
 
 exports.createOrder = async (req, res) => {
     try {
-        const order = await OrderService.createOrder(req.body, req.file);
+        const items = JSON.parse(req.body.items); // Parse the items array
+        const order = await OrderService.createOrder(req.body, items, req.file); // Pass items to the service
+
         res.status(201).json(order);
     } catch (error) {
-        res.status(500).json({ error: "Failed to create order", details: error });
+        console.error("Controller Error:", error); // Log the error for debugging
+        res.status(500).json({ error: "Failed to create order", details: error.message });
     }
 };
 

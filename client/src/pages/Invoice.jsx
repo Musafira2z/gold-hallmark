@@ -27,91 +27,81 @@ const Invoice = () => {
         fetchOrderData();
     }, [id]);
 
+
     if (!order) {
         return <div>Loading...</div>;
     }
-
     return (
-        <div className="bg-[#E0F2F1] h-[100vh] -mt-10 pt-20 print-content">
-            <div className="bg-white px-20 py-10 pt-36 rounded-lg mt-10 max-w-6xl mx-auto mb-48">
-                <h2 className="text-lg font-bold mb-4">Customer Profile</h2>
-                <div className="grid grid-cols-2 gap-4 mb-4">
+        <div className="bg-[#E0F2F1] h-[100vh] pt-20 print-content">
+            <h2 className="text-center pt-10 font-semibold text-2xl">Hall Mark Cash Memo</h2>
+            <div className="bg-white px-20 pb-4 rounded-lg mt-4 max-w-6xl mx-auto mb-48">
+                <h2 className="text-lg font-bold mb-2">Customer Profile</h2>
+                <div className="grid grid-cols-2 gap-2 mb-0">
                     <div>
-                        <p>
+                        <p className="text-[14px]">
                             <span className="">ID:</span> {order?.customerID}
                         </p>
-                        <p>
+                        <p className="text-[14px]">
                             <span className="">Name:</span> {order?.name}
                         </p>
-                        <p>
+                        <p className="text-[14px]">
                             <span className="">Mobile:</span> {order?.contact}
                         </p>
-                        <p>
+                        <p className="text-[14px]">
                             <span className="">Address:</span> {order?.address}
                         </p>
-                        <p>
+                        <p className="text-[14px]">
                             <span className="">Company:</span> {order?.company}
                         </p>
-                    </div>
-                    <div>
-                        <p>
-                            <span className="">Voucher Number:</span> {order?._id}
+                        <p className="text-[14px]">
+                            <span className="">Voucher Number:</span> {order?.voucher}
                         </p>
-                        <p>
-                            <span className="">Box Number:</span> 0
+                        <p className="text-[14px]">
+                            <span className="">Delivery Date:</span> {order?.createdAt ? new Date(order.createdAt).toLocaleDateString('en-GB') : 'N/A'}
                         </p>
-                        <p>
-                            <span className="">Order Date:</span> {order?.createdAt ? new Date(order.createdAt).toLocaleDateString('en-GB') : 'N/A'}
-                        </p>
-                        <p>
-                            <span className="">Order Time:</span>
+                        <p className="text-[14px]">
+                            <span className="">Delivery Time:</span>
                             {order?.createdAt ? new Date(order.createdAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }) : 'N/A'}
                         </p>
                     </div>
+                    <div className="w-full flex justify-center items-start p-4">
+                        <img className="w-40 h-40" src={`${apiUrl}${order.image}`} alt="" />
+                    </div>
                 </div>
 
-                <h2 className="text-lg font-bold mb-4">Order Details</h2>
+                <h2 className="text-lg font-bold mb-2">Order Details</h2>
                 <table className="w-full border-collapse border border-gray-300 text-left">
                     <thead className="bg-gray-100">
                         <tr>
                             <th className="border border-gray-300 px-4 py-2">Item Name</th>
                             <th className="border border-gray-300 px-4 py-2">Quantity</th>
-                            <th className="border border-gray-300 px-4 py-2">Rate</th>
+                            <th className="border border-gray-300 px-4 py-2">Rate (BDT)</th>
                             <th className="border border-gray-300 px-4 py-2">Weight</th>
                             <th className="border border-gray-300 px-4 py-2">Hall Mark</th>
                             <th className="border border-gray-300 px-4 py-2">Amount</th>
                         </tr>
                     </thead>
                     <tbody>
-                        <tr>
-                            <td className="border border-gray-300 px-4 py-2"> {order?.item} </td>
-                            <td className="border border-gray-300 px-4 py-2">{order?.quantity}</td>
-                            <td className="border border-gray-300 px-4 py-2">{order?.rate}</td>
-                            <td className="border border-gray-300 px-4 py-2">{order?.weight}{order?.weightUnite}</td>
-                            <td className="border border-gray-300 px-4 py-2">{order?.xray}</td>
-                            <td className="border border-gray-300 px-4 py-2">{order?.amount}</td>
-                        </tr>
+                        {order.items.map((item, index) => ( // Map over items array
+                            <tr key={index}>
+                                <td className="border border-gray-300 px-4 py-0">{item.item}</td>
+                                <td className="border border-gray-300 px-4 py-0">{item.quantity}</td>
+                                <td className="border border-gray-300 px-4 py-0">{item.rate}</td>
+                                <td className="border border-gray-300 px-4 py-0">{item.weight} {item.weightUnite}</td>
+                                <td className="border border-gray-300 px-4 py-0">{order.xray}</td> {/* Assuming xray applies to all items */}
+                                <td className="border border-gray-300 px-4 py-0">{item.amount}</td>
+                            </tr>
+                        ))}
                     </tbody>
                 </table>
 
-                <div className="flex justify-between items-center mt-4">
+                <div className="flex justify-between items-center mt-1">
                     <div>
                         <p>
-                            <span className="">Total Amount:</span> 1.56
+                            <span className="">Total Amount:</span> {order.totalAmount} BDT
                         </p>
                         <p>
-                            <span className="">Paid Amount:</span> 0.00
-                        </p>
-                        <p>
-                            <span className="">Balance Amount:</span> 0.00
-                        </p>
-                    </div>
-                    <div>
-                        <p>
-                            <span className="">Delivery Date:</span>  {order?.customerFrom ? new Date(order.customerFrom).toLocaleDateString('en-GB') : 'N/A'}
-                        </p>
-                        <p>
-                            <span className="">Delivery Time:</span> {order?.customerFrom ? new Date(order.customerFrom).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }) : 'N/A'}
+                            <span className="">Paid Amount:</span> {order.totalAmount} BDT
                         </p>
                     </div>
                 </div>
@@ -123,9 +113,6 @@ const Invoice = () => {
                     <div className="border-t border-gray-300 text-center px-4">
                         <p>Authorized Signature</p>
                     </div>
-                </div>
-                <div className="w-full flex justify-center mt-10 p-4">
-                    <img className="w-full h-[320px]" src={`${apiUrl}${order.image}`} alt="" />
                 </div>
             </div>
 
