@@ -34,38 +34,40 @@ const Invoice = () => {
     return (
         <div className="bg-[#E0F2F1] h-[100vh] pt-20 print-content">
             <h2 className="text-center pt-10 font-semibold text-2xl">Hall Mark Cash Memo</h2>
-            <div className="bg-white px-20 pb-4 rounded-lg mt-4 max-w-6xl mx-auto mb-48">
-                <h2 className="text-lg font-bold mb-2">Customer Profile</h2>
-                <div className="grid grid-cols-2 gap-2 mb-0">
+            <div className="bg-white px-20 rounded-lg mt-4 max-w-6xl mx-auto">
+                <h2 className="text-lg font-bold">Customer Profile</h2>
+                <div className="grid grid-cols-3 gap-2 mb-0 items-center">
                     <div>
-                        <p className="text-[14px]">
+                        <p className="text-[12px]">
                             <span className="">ID:</span> {order?.customerID}
                         </p>
-                        <p className="text-[14px]">
+                        <p className="text-[12px]">
                             <span className="">Name:</span> {order?.name}
                         </p>
-                        <p className="text-[14px]">
+                        <p className="text-[12px]">
                             <span className="">Mobile:</span> {order?.contact}
                         </p>
-                        <p className="text-[14px]">
+                        <p className="text-[12px]">
                             <span className="">Address:</span> {order?.address}
                         </p>
-                        <p className="text-[14px]">
+                    </div>
+                    <div>
+                        <p className="text-[12px]">
                             <span className="">Company:</span> {order?.company}
                         </p>
-                        <p className="text-[14px]">
+                        <p className="text-[12px]">
                             <span className="">Voucher Number:</span> {order?.voucher}
                         </p>
-                        <p className="text-[14px]">
+                        <p className="text-[12px]">
                             <span className="">Delivery Date:</span> {order?.createdAt ? new Date(order.createdAt).toLocaleDateString('en-GB') : 'N/A'}
                         </p>
-                        <p className="text-[14px]">
+                        <p className="text-[12px]">
                             <span className="">Delivery Time:</span>
                             {order?.createdAt ? new Date(order.createdAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }) : 'N/A'}
                         </p>
                     </div>
-                    <div className="w-full flex justify-center items-start p-4">
-                        <img className="w-40 h-40" src={`${apiUrl}${order.image}`} alt="" />
+                    <div className="w-full flex justify-center items-start ">
+                        <img className="w-24 h-[100px]" src={`${apiUrl}${order.image}`} alt="" />
                     </div>
                 </div>
 
@@ -88,7 +90,7 @@ const Invoice = () => {
                                 <td className="border border-gray-300 px-4 py-0">{item.quantity}</td>
                                 <td className="border border-gray-300 px-4 py-0">{item.rate}</td>
                                 <td className="border border-gray-300 px-4 py-0">{item.weight} {item.weightUnite}</td>
-                                <td className="border border-gray-300 px-4 py-0">{order.xray}</td> {/* Assuming xray applies to all items */}
+                                <td className="border border-gray-300 px-4 py-0">{item.xray}</td> {/* Assuming xray applies to all items */}
                                 <td className="border border-gray-300 px-4 py-0">{item.amount}</td>
                             </tr>
                         ))}

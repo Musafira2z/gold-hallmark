@@ -22,7 +22,7 @@ connectDB().then(r => console.log("Connected to the database..."));
 // Use routes
 app.use("/users", userRoutes);
 app.use("/orders", orderRoutes);
-
+app.use("/orders", orderRoutes);
 
 app.get("/", (req, res) => {
     res.json("Welcome to Gold Hallmark API");

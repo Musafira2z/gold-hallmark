@@ -7,6 +7,7 @@ const itemSchema = new mongoose.Schema({  // Schema for individual items
     weight: Number,
     amount: Number,
     weightUnite: String,
+    xray: String,
 });
 
 const orderSchema = new mongoose.Schema({
@@ -19,7 +20,6 @@ const orderSchema = new mongoose.Schema({
     type: String,
     voucher: Number,
     totalAmount: Number, // Use totalAmount to avoid confusion
-    xray: String,
     customerFrom: Date,
     image: String,
 }, { timestamps: true });

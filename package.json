@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "dayjs": "^1.11.13",
+    "react-bootstrap-icons": "^1.11.5"
+  }
+}
