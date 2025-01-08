@@ -74,6 +74,7 @@ const Hallmark = () => {
                 image: files[0],
             }));
             setImageName(files[0].name); // Set image name
+            setCapturedImage(URL.createObjectURL(files));
         } else if (id === "quantity" || id === "rate") {
             const parsedValue = parseFloat(value) || 0;
             setFormData((prevData) => {
@@ -219,7 +220,7 @@ const Hallmark = () => {
     // Open the camera modal
     const openCamera = () => {
         setIsModalOpen(true);
-        navigator.mediaDevices.getUserMedia({ video: true })
+        navigator.mediaDevices.getUserMedia({ video: true },{ aspectRatio: 1.777777778 })
             .then((stream) => {
                 setCameraStream(stream);
             })
@@ -449,7 +450,8 @@ const Hallmark = () => {
                                     </label>
                                     {capturedImage && (
                                         <div className="mb-2 text-green-500">
-                                            Image: {imageName}
+                                            {/* Image: {imageName} */}
+                                            <img src={capturedImage} alt={imageName} className="my-4 max-h-36" /> {/* Add margin and max height */}
                                         </div>
                                     )}
                                     {!capturedImage && (
@@ -490,6 +492,7 @@ const Hallmark = () => {
                                 autoPlay
                                 playsInline
                                 ref={(video) => video && (video.srcObject = cameraStream)}
+                                style={{aspectRatio: '16/9' }}
                             ></video>
                             <div className="mt-4 flex justify-center">
                                 <button

@@ -11,7 +11,7 @@ const Xray = () => {
     const [selectedCustomerId, setSelectedCustomerId] = useState("");
     const [selectedCompany, setSelectedCompany] = useState("");
     const [items, setItems] = useState([
-        { item: "", quantity: "Quantity", rate: "Rate", weight: "Weight", amount: "", weightUnite: "gm",xray:"" }, // Initial item
+        { item: "", quantity: "Quantity", rate: "Rate", weight: "Weight", amount: "", weightUnite: "gm", xray: "" }, // Initial item
     ]);
     const [formData, setFormData] = useState({
         name: "",
@@ -59,7 +59,7 @@ const Xray = () => {
     const addItem = () => {
         const newItem = items.map((item) => ({ ...item })); // Create a copy of the current items
         setAddedItems([...addedItems, newItem]); // Add the copied items to addedItems
-        setItems([{ item: "", quantity: 0, rate: 0, weight: 0, amount: 0, weightUnite: "gm",xray:""  }]); // Reset the input form
+        setItems([{ item: "", quantity: 0, rate: 0, weight: 0, amount: 0, weightUnite: "gm", xray: "" }]); // Reset the input form
         setTotalAmount(calculateTotal(addedItems.flat().concat(newItem)));
 
     };
@@ -218,7 +218,7 @@ const Xray = () => {
     // Open the camera modal
     const openCamera = () => {
         setIsModalOpen(true);
-        navigator.mediaDevices.getUserMedia({ video: true })
+        navigator.mediaDevices.getUserMedia({ video: true }, { aspectRatio: 1.777777778 })
             .then((stream) => {
                 setCameraStream(stream);
             })
@@ -383,7 +383,7 @@ const Xray = () => {
                                         </div>
                                         <div>
                                             <label htmlFor="item" className="block text-[#004D40] font-bold mb-1">
-                                            Xray
+                                                Xray
                                             </label>
                                             <input
                                                 id=""
@@ -488,6 +488,7 @@ const Xray = () => {
                                 height="auto"
                                 autoPlay
                                 playsInline
+                                style={{aspectRatio: '16/9' }}
                                 ref={(video) => video && (video.srcObject = cameraStream)}
                             ></video>
                             <div className="mt-4 flex justify-center">

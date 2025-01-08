@@ -66,8 +66,8 @@ const Invoice = () => {
                             {order?.createdAt ? new Date(order.createdAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }) : 'N/A'}
                         </p>
                     </div>
-                    <div className="w-full flex justify-center items-start ">
-                        <img className="w-24 h-[100px]" src={`${apiUrl}${order.image}`} alt="" />
+                    <div className="w-full flex justify-end items-start ">
+                        <img className="" src={`${apiUrl}${order.image}`} alt="" />
                     </div>
                 </div>
 
