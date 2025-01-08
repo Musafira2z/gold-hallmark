@@ -22,3 +22,16 @@ exports.createOrder = async (orderData, items, file) => { // Add items parameter
 exports.getOrderById = async (id) => {
     return await Order.findById(id);
 };
+exports.getOrdersByDate = async (startDate, endDate) => {
+    try {
+        const orders = await Order.find({
+            createdAt: { $gte: startDate, $lte: endDate }
+        });
+        
+        // Return the orders or an empty array if no orders are found
+        return orders || [];
+    } catch (error) {
+        console.error("Error fetching orders by date:", error);
+        throw new Error('Error fetching orders by date');
+    }
+};
