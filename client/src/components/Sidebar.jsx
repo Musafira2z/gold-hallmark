@@ -174,7 +174,7 @@ function Sidebar() {
 
         {/* Sidebar Menu */}
         <List
-        className=""
+          className=""
         >
           {menuItems.map((menuItem) => (
             <Accordion
@@ -208,7 +208,7 @@ function Sidebar() {
                   </ListItemPrefix>
                   {!isCollapsed && (
                     <Typography
-                      
+
                       className="mr-auto  font-bold text-[#004D40]"
                     >
                       {menuItem.title}
@@ -220,22 +220,28 @@ function Sidebar() {
                 <AccordionBody className="py-0">
                   <List className="p-0">
                     {menuItem.items.map((item) => (
-                      <ListItem key={item.id}>
-                        <ListItemPrefix>
-                          <ChevronRightIcon
-                            strokeWidth={3}
-                            className="h-3 w-5"
-                          />
-                        </ListItemPrefix>
+                      <ListItem key={item.id} className="p-0">
                         {item.link ? (
-                          <Link to={item.link} className="text-[#004D40]">
-                            {item.title} 
+                          <Link
+                            to={item.link}
+                            className="flex w-full items-center gap-3 px-3 py-2 text-[#004D40] hover:bg-blue-gray-50 rounded-lg transition-all"
+                          >
+                            <ListItemPrefix>
+                              <ChevronRightIcon strokeWidth={3} className="h-3 w-5" />
+                            </ListItemPrefix>
+                            <Typography className="font-medium">{item.title}</Typography>
                           </Link>
                         ) : (
-                          item.title
+                          <div className="flex w-full items-center gap-3 px-3 py-2 text-[#004D40]">
+                            <ListItemPrefix>
+                              <ChevronRightIcon strokeWidth={3} className="h-3 w-5" />
+                            </ListItemPrefix>
+                            <Typography className="font-medium">{item.title}</Typography>
+                          </div>
                         )}
                       </ListItem>
                     ))}
+
                   </List>
                 </AccordionBody>
               )}
