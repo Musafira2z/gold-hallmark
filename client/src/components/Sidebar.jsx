@@ -64,12 +64,9 @@ function Sidebar() {
       title: "Service",
       items: [
         {
-          id: 1,
-          title: "Melting",
-        },
-        {
-          id: 2,
-          title: "Normal Melting",
+          id: 4,
+          title: "Hallmark",
+          link: "/hallmark",
         },
         {
           id: 3,
@@ -77,10 +74,13 @@ function Sidebar() {
           link: "/xray",
         },
         {
-          id: 4,
-          title: "Hallmark",
-          link: "/hallmark",
+          id: 1,
+          title: "Melting",
         },
+        {
+          id: 2,
+          title: "Normal Melting",
+        }
       ],
     },
     {
