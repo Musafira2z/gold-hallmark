@@ -2,8 +2,9 @@ import React, { useContext, useEffect, useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import Select from "react-select"; // Import react-select
-import OrderDetailPage from "../components/OrderDetailsPag";
 import { apiUrl, UserContext } from "../context/UserContext.jsx";
+import { CgRemove } from "react-icons/cg";
+import { FaCamera } from "react-icons/fa";
 
 const Hallmark = () => {
     const { customers } = useContext(UserContext);
@@ -11,8 +12,74 @@ const Hallmark = () => {
     const [totalAmount, setTotalAmount] = useState(0);
     const [selectedCustomerId, setSelectedCustomerId] = useState("");
     const [selectedCompany, setSelectedCompany] = useState("");
+    const itemNames = [
+        "Ayesti",
+        "Aungty",
+        "Baju",
+        "Bala",
+        "Bangle",
+        "Bicha",
+        "Bracelet",
+        "Buttam",
+        "Bati",
+        "Bauti",
+        "Chain",
+        "Chik",
+        "Chur",
+        "Churi",
+        "Chamus",
+        "Chandi-Rupa",
+        "Center piss",
+        "Court pin",
+        "Dul",
+        "Earring pair",
+        "Ghaar tana pair",
+        "Glass",
+        "Gold",
+        "Haar",
+        "Hair chain pair",
+        "Hath panja",
+        "Jhapta",
+        "Jumka pair",
+        "Kaan tana pair",
+        "Kankon",
+        "Konhkon",
+        "Key",
+        "Kontho chik",
+        "Locket",
+        "Locket & chain",
+        "Mangalsutra",
+        "Mantasha",
+        "Medal",
+        "Madli",
+        "Mukut",
+        "Necklace",
+        "Nose pin",
+        "Noth",
+        "Nupur",
+        "Pasha pair",
+        "Payel",
+        "Pola",
+        "Plate",
+        "Ring",
+        "Ball ring",
+        "Ratan chur",
+        "Shakha",
+        "Side clip",
+        "Sita haar",
+        "Sithi patti",
+        "Silver",
+        "Spcial item",
+        "Shakha piss",
+        "Sui suta",
+        "Tikly",
+        "Taj",
+        "Tabic,",
+        "Tip",
+        "Zoroa haar"
+    ];
     const [items, setItems] = useState([
-        { item: "", quantity: "Quantity", rate: "Rate", weight: "Weight", amount: "", weightUnite: "gm",xray:"" }, // Initial item
+        { item: "", quantity: "Quantity", rate: "Rate", weight: "Weight", amount: "", weightUnite: "gm", xray: "" }, // Initial item
     ]);
     const [formData, setFormData] = useState({
         name: "",
@@ -60,9 +127,17 @@ const Hallmark = () => {
     const addItem = () => {
         const newItem = items.map((item) => ({ ...item })); // Create a copy of the current items
         setAddedItems([...addedItems, newItem]); // Add the copied items to addedItems
-        setItems([{ item: "", quantity: 0, rate: 0, weight: 0, amount: 0, weightUnite: "gm",xray:""  }]); // Reset the input form
+        setItems([{ item: "", quantity: "", rate: "", weight: "", amount: "", weightUnite: "gm", xray: "" }]); // Reset the input form
         setTotalAmount(calculateTotal(addedItems.flat().concat(newItem)));
 
+    };
+    const deleteItem = (index) => {
+        setAddedItems((prevItems) => {
+            const newItems = [...prevItems];
+            newItems.splice(index, 1); // Remove item at `index` position
+            setTotalAmount(calculateTotal(newItems)); // Recalculate the total
+            return newItems;
+        });
     };
     // Handle form input change
     const handleInputChange = (e) => {
@@ -131,9 +206,11 @@ const Hallmark = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         const allItems = [...addedItems];
-        if (items[0].item !== "" || items[0].quantity !== 0 || items[0].rate !== 0) {
+        // Check whether the fields are not empty before pushing them into `allItems`
+        if (items[0].item !== "" && items[0].quantity !== "" && items[0].rate !== "") {
             allItems.push(items);
         }
+
         const calculatedTotalAmount = totalAmount;
         const data = new FormData();
         Object.keys(formData).forEach((key) => {
@@ -182,7 +259,7 @@ const Hallmark = () => {
                 alert("Failed to open new tab. Please allow popups for this site.");
             }
             setAddedItems([]); // Clear added items after successful submission
-            setItems([{ item: "", quantity: 0, rate: 0, weight: 0, amount: 0, weightUnite: "gm" }]); // Reset items state after submission
+            setItems([{ item: "", quantity: "Quantity", rate: "Rate", weight: "Weight", amount: "Amount", weightUnite: "gm" }]); // Reset items state after submission
             setTotalAmount(0)
         } catch (error) {
             console.error("Error uploading data:", error);
@@ -220,7 +297,7 @@ const Hallmark = () => {
     // Open the camera modal
     const openCamera = () => {
         setIsModalOpen(true);
-        navigator.mediaDevices.getUserMedia({ video: true },{ aspectRatio: 1.777777778 })
+        navigator.mediaDevices.getUserMedia({ video: true }, { aspectRatio: 1.777777778 })
             .then((stream) => {
                 setCameraStream(stream);
             })
@@ -320,12 +397,11 @@ const Hallmark = () => {
                                     <div key={index} className="flex  flex-col gap-y-3 p-2 rounded">
                                         <div>
                                             <label htmlFor="item" className="block text-[#004D40] font-bold mb">Item Name</label>
-                                            <input
+                                            <Select
+                                                options={itemNames.map(name => ({ value: name, label: name }))}
+                                                id="item"
                                                 className="w-full border-b border-gray-300 p-2"
-                                                type="text"
-                                                placeholder="Please input item name"
-                                                value={item.item}
-                                                onChange={(e) => handleItemChange(index, "item", e.target.value)}
+                                                onChange={(selectedOption) => handleItemChange(index, "item", selectedOption.value)}
                                             />
                                         </div>
                                         <div className="flex gap-x-5">
@@ -403,7 +479,7 @@ const Hallmark = () => {
                             </div>
                         </div>
                         <div className="w-full space-y-5 border border-gray-100 shadow-sm p-3">
-                            <div className="space-y-4 "> {/* Right Section - Table */}
+                            <div className="space-y-4 items-list"> {/* Right Section - Table */}
                                 <table className="w-full border-collapse">
                                     <thead>
                                         <tr>
@@ -412,6 +488,7 @@ const Hallmark = () => {
                                             <th className="border p-2">Rate</th>
                                             <th className="border p-2">Weight</th>
                                             <th className="border p-2">Amount</th>
+                                            <th className="border p-2">Delete</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -422,6 +499,11 @@ const Hallmark = () => {
                                                 <td className="border p-2">{item.rate}</td>
                                                 <td className="border p-2">{item.weight} {item.weightUnite}</td>
                                                 <td className="border p-2">{item.amount}</td>
+                                                <td className="border p-2 text-center">
+                                                    <button className="text-red-600 text-xl" onClick={() => deleteItem(index)}>
+                                                        <CgRemove />
+                                                    </button>
+                                                </td>
                                             </tr>
                                         ))}
                                         <tr>
@@ -465,8 +547,9 @@ const Hallmark = () => {
                                     <button
                                         type="button"
                                         onClick={openCamera}
-                                        className="w-full px-3 py-2 text-white bg-[#004D40] border-[#004D40] rounded-lg my-3"
+                                        className="w-full lg:w-1/2 px-3 py-2 text-white bg-[#004D40] border-[#004D40] rounded-lg my-3 flex text-center justify-center items-center gap-2"
                                     >
+                                        <FaCamera/>
                                         Open Camera
                                     </button>
                                 </div>
@@ -492,7 +575,7 @@ const Hallmark = () => {
                                 autoPlay
                                 playsInline
                                 ref={(video) => video && (video.srcObject = cameraStream)}
-                                style={{aspectRatio: '16/9' }}
+                                style={{ aspectRatio: '16/9' }}
                             ></video>
                             <div className="mt-4 flex justify-center">
                                 <button
