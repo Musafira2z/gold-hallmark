@@ -40,11 +40,11 @@ const Invoice = () => {
     }
     return (
         <div className="bg-[#E0F2F1] h-[100vh] pt-20 print-content">
-            <h2 className="text-center pt-5 font-semibold text-xl">Hall Mark Cash Memo</h2>
+            <h2 className="text-center pt-5 font-semibold text-xl -ml-3">Hallmark Cash Memo</h2>
             <div className="bg-white px-20 rounded-lg mt-2 max-w-6xl mx-auto">
-                <h2 className="text-lg font-bold">Customer Profile</h2>
-                <div className="grid grid-cols-3 gap-2 mb-0 items-center">
-                    <div>
+                <div className="grid grid-cols-3 gap-2 items-start -mb-5">
+                    <div className="">
+                        <h2 className="text-lg font-normal">Customer Profile</h2>
                         <p className="text-xs">
                             <span className="">ID:</span> {order?.customerID}
                         </p>
@@ -55,13 +55,16 @@ const Invoice = () => {
                             <span className="">Mobile:</span> {order?.contact}
                         </p>
                         <p className="text-xs">
+                            <span className="">Company:</span> {order?.company}
+                        </p>
+                        <p className="text-xs">
                             <span className="">Address:</span> {order?.address}
                         </p>
                     </div>
-                    <div>
-                        <p className="text-xs">
-                            <span className="">Company:</span> {order?.company}
-                        </p>
+                    <div >
+                        <img className="w-11/12" src={`${apiUrl}${order.image}`} alt="" />
+                    </div>
+                    <div className="-ml-2 mt-20">
                         <p className="text-xs">
                             <span className="">Voucher Number:</span> {order?.voucher}
                         </p>
@@ -73,12 +76,10 @@ const Invoice = () => {
                             {order?.createdAt ? new Date(order.createdAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }) : 'N/A'}
                         </p>
                     </div>
-                    <div className="w-full flex justify-end items-start ">
-                        <img className="w-7/12" src={`${apiUrl}${order.image}`} alt="" />
-                    </div>
+
                 </div>
 
-                <h2 className="text-md font-bold mb-1">Order Details</h2>
+                <h2 className="text-md font-bold">Order Details</h2>
                 <table className="w-full border-collapse border border-gray-300 text-left">
                     <thead className="bg-gray-100">
                         <tr>
