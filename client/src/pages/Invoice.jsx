@@ -64,7 +64,7 @@ const Invoice = () => {
                     <div >
                         <img className="w-11/12" src={`${apiUrl}${order.image}`} alt="" />
                     </div>
-                    <div className="-ml-2 mt-20">
+                    <div className="ml-2 mt-20">
                         <p className="text-xs">
                             <span className="">Voucher Number:</span> {order?.voucher}
                         </p>
