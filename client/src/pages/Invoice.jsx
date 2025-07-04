@@ -83,12 +83,12 @@ const Invoice = () => {
                 <table className="w-full border-collapse border border-gray-300 text-left">
                     <thead className="bg-gray-100">
                         <tr>
-                            <th className="border border-gray-300 text-sm px-4 py-2">Item Name</th>
-                            <th className="border border-gray-300 text-sm px-4 py-2">Quantity</th>
-                            <th className="border border-gray-300 text-sm px-4 py-2">Rate (BDT)</th>
-                            <th className="border border-gray-300 text-sm px-4 py-2">Weight</th>
-                            <th className="border border-gray-300 text-sm px-4 py-2">Hall Mark</th>
-                            <th className="border border-gray-300 text-sm px-4 py-2">Amount</th>
+                            <th className="border border-gray-600 text-sm px-4 py-2">Item Name</th>
+                            <th className="border border-gray-600 text-sm px-4 py-2">Quantity</th>
+                            <th className="border border-gray-600 text-sm px-4 py-2">Rate (BDT)</th>
+                            <th className="border border-gray-600 text-sm px-4 py-2">Weight</th>
+                            <th className="border border-gray-600 text-sm px-4 py-2">Hall Mark</th>
+                            <th className="border border-gray-600 text-sm px-4 py-2">Amount</th>
                         </tr>
                     </thead>
                     <tbody>
