@@ -167,37 +167,52 @@ const Hallmark = () => {
         }
     };
 
-    const handleCustomerChange = (event) => {
-        const customerId = event.target.value;
-        setSelectedCustomerId(customerId);
+    // Create options for react-select with both ID and phone
+    const customerOptions = customers.map((customer) => ({
+        value: customer.customerID,
+        label: `${customer.customerID} (${customer.contact})`,
+        contact: customer.contact,
+    }));
 
-        const selectedCustomer = customers.find(
-            (customer) => customer.customerID === customerId
+    // Custom filter to allow searching by ID or phone
+    const filterOption = (option, inputValue) => {
+        const { label, contact, value } = option;
+        const valueStr = value ? String(value).toLowerCase() : "";
+        const contactStr = contact ? String(contact).toLowerCase() : "";
+        const labelStr = label ? String(label).toLowerCase() : "";
+        const inputStr = inputValue ? inputValue.toLowerCase() : "";
+
+        return (
+            labelStr.includes(inputStr) ||
+            contactStr.includes(inputStr) ||
+            valueStr.includes(inputStr)
         );
+    };
 
+    const handleCustomerSelect = (selectedOption) => {
+        if (!selectedOption) {
+            setSelectedCustomerId("");
+            setFormData({ ...formData, customerID: "", name: "", company: "", contact: "", address: "" });
+            return;
+        }
+        setSelectedCustomerId(selectedOption.value);
+        const selectedCustomer = customers.find(
+            (customer) => customer.customerID === selectedOption.value
+        );
         if (selectedCustomer) {
-            // If the customer has multiple companies, pre-select the first one
             const initialCompany = selectedCustomer.company.length > 0 ? selectedCustomer.company[0] : "";
-            setSelectedCompany(initialCompany);  // Update selectedCompany state
-
+            setSelectedCompany(initialCompany);
             setFormData({
                 ...formData,
-                customerID: customerId,
+                customerID: selectedCustomer.customerID,
                 name: selectedCustomer.name,
-                company: initialCompany, // Pre-fill company field
+                company: initialCompany,
                 contact: selectedCustomer.contact,
                 address: selectedCustomer.address,
             });
-        } else {        // Clear name and company if ID is invalid
-            setFormData({
-                ...formData,
-                name: "",
-                company: "",
-                contact: "",
-                address: "",
-            });
         }
     };
+
     const calculateTotal = (allItems) => {
         return allItems.reduce((sum, item) => sum + parseFloat(item.amount || 0), 0);
     }
@@ -289,11 +304,6 @@ const Hallmark = () => {
         });
     };
 
-    const customerOptions = customers?.map((customer) => ({
-        value: customer.customerID,
-        label: customer.customerID,
-    }));
-
     // Open the camera modal
     const openCamera = () => {
         setIsModalOpen(true);
@@ -344,19 +354,18 @@ const Hallmark = () => {
                     <div className="flex flex-col lg:flex-row gap-10">
                         <div className="border border-gray-100 shadow-sm p-3" >
                             <div className="space-y-4 px-3 py-4">
-                                <div className="mb-2">
+                                <div className="mb-4">
                                     <label htmlFor="customerID" className="block text-[#004D40] font-bold mb-1">
-                                        Customer ID
+                                        Customer ID or Phone Number
                                     </label>
                                     <Select
-                                        options={customerOptions}
                                         id="customerID"
-                                        className="w-full border-b border-gray-300 p-2 text-[#004D40]"
-                                        value={customerOptions.find(option => option.value === selectedCustomerId)} //  This line is crucial!
-                                        onChange={(selectedOption) => {
-                                            handleCustomerChange({ target: { value: selectedOption.value } });
-                                        }}
-                                        isSearchable // Enable search functionality
+                                        options={customerOptions}
+                                        value={customerOptions.find(option => option.value === selectedCustomerId) || null}
+                                        onChange={handleCustomerSelect}
+                                        filterOption={filterOption}
+                                        isClearable
+                                        placeholder="Search by ID or phone number..."
                                     />
                                 </div>
                                 <div>
