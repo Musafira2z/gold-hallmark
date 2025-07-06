@@ -92,7 +92,7 @@ const Hallmark = () => {
         weightUnite: "gm",
         rate: "",
         amount: "",
-        customerFrom: "",
+        customerFrom: new Date().toISOString().split('T')[0], // Set current date automatically
         image: null,
         contact: "",
         address: "",
@@ -124,12 +124,56 @@ const Hallmark = () => {
             return newItems;
         });
     };
+
+    // Handle keyboard navigation for item fields
+    const handleKeyPress = (index, field, e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            
+            // Define the field order for navigation
+            const fieldOrder = ['quantity', 'weight', 'rate', 'xray'];
+            const currentFieldIndex = fieldOrder.indexOf(field);
+            
+            if (currentFieldIndex < fieldOrder.length - 1) {
+                // Move to next field
+                const nextField = fieldOrder[currentFieldIndex + 1];
+                const nextInput = document.querySelector(`input[data-field="${index}-${nextField}"]`);
+                if (nextInput) {
+                    nextInput.focus();
+                }
+            } else {
+                // Last field - add item to list
+                const currentItem = items[index];
+                if (currentItem.item && currentItem.quantity && currentItem.rate) {
+                    addItem();
+                    // Focus on the first field of the new item
+                    setTimeout(() => {
+                        const newItemInput = document.querySelector(`input[data-field="${index + 1}-quantity"]`);
+                        if (newItemInput) {
+                            newItemInput.focus();
+                        }
+                    }, 100);
+                }
+            }
+        }
+    };
+
     const addItem = () => {
         const newItem = items.map((item) => ({ ...item })); // Create a copy of the current items
         setAddedItems([...addedItems, newItem]); // Add the copied items to addedItems
-        setItems([{ item: "", quantity: "", rate: "", weight: "", amount: "", weightUnite: "gm", xray: "" }]); // Reset the input form
+        
+        // Keep the item name but reset other fields
+        const currentItemName = items[0].item;
+        setItems([{ 
+            item: currentItemName, // Keep the selected item name
+            quantity: "", 
+            rate: "", 
+            weight: "", 
+            amount: "", 
+            weightUnite: "gm", 
+            xray: "" 
+        }]); // Reset the input form but keep item name
         setTotalAmount(calculateTotal(addedItems.flat().concat(newItem)));
-
     };
     const deleteItem = (index) => {
         setAddedItems((prevItems) => {
@@ -249,33 +293,25 @@ const Hallmark = () => {
 
             setOrdersData((prevData) => [...prevData, response.data]);
 
-            // Reset form data after successful submission
-            setFormData({
-                name: "",
-                customerID: "",
-                company: "",
-                item: "",
-                quantity: "",
-                weight: "",
-                weightUnite: "gm",
-                rate: "",
-                amount: "",
-                xray: "",
-                customerFrom: "",
-                image: null,
-                contact: "",
-                address: "",
-            });
+            // Only reset item-related fields and image, keep customer info and delivery date
             setImageName(""); // Reset image name after submission
+            setCapturedImage(null); // Reset captured image
+            setAddedItems([]); // Clear added items after successful submission
+            setItems([{ item: "", quantity: "", rate: "", weight: "", amount: "", weightUnite: "gm", xray: "" }]); // Reset items state but keep structure
+            setTotalAmount(0);
+            
+            // Reset only the image field in formData, keep everything else
+            setFormData(prevData => ({
+                ...prevData,
+                image: null
+            }));
+
             const invoiceUrl = `/invoice/${response.data._id}`;
             const newTab = window.open(invoiceUrl, "_blank");
 
             if (!newTab) {
                 alert("Failed to open new tab. Please allow popups for this site.");
             }
-            setAddedItems([]); // Clear added items after successful submission
-            setItems([{ item: "", quantity: "Quantity", rate: "Rate", weight: "Weight", amount: "Amount", weightUnite: "gm" }]); // Reset items state after submission
-            setTotalAmount(0)
         } catch (error) {
             console.error("Error uploading data:", error);
         }
@@ -421,7 +457,9 @@ const Hallmark = () => {
                                                     type="number"
                                                     placeholder="Quantity"
                                                     value={item.quantity}
+                                                    data-field={`${index}-quantity`}
                                                     onChange={(e) => handleItemChange(index, "quantity", e.target.value)}
+                                                    onKeyPress={(e) => handleKeyPress(index, "quantity", e)}
                                                 />
                                             </div>
                                             <div>
@@ -431,7 +469,9 @@ const Hallmark = () => {
                                                     type="number"
                                                     placeholder="Rate"
                                                     value={item.rate}
+                                                    data-field={`${index}-rate`}
                                                     onChange={(e) => handleItemChange(index, "rate", e.target.value)}
+                                                    onKeyPress={(e) => handleKeyPress(index, "rate", e)}
                                                 />
                                             </div>
                                         </div>
@@ -443,7 +483,9 @@ const Hallmark = () => {
                                                     className="w-2/3 border-b border-gray-300 p-2"
                                                     placeholder="Weight"
                                                     value={item.weight}
+                                                    data-field={`${index}-weight`}
                                                     onChange={(e) => handleItemChange(index, "weight", e.target.value)}
+                                                    onKeyPress={(e) => handleKeyPress(index, "weight", e)}
                                                 />
                                             </div>
                                             <select
@@ -477,7 +519,9 @@ const Hallmark = () => {
                                                 type="text"
                                                 className="w-full border-b border-gray-300 p-2"
                                                 value={item.xray}
+                                                data-field={`${index}-xray`}
                                                 onChange={(e) => handleItemChange(index, "xray", e.target.value)}
+                                                onKeyPress={(e) => handleKeyPress(index, "xray", e)}
                                             />
                                         </div>
                                     </div>
@@ -532,6 +576,7 @@ const Hallmark = () => {
                                         className="w-full border-b border-gray-300 p-2"
                                         value={formData.customerFrom}
                                         onChange={handleInputChange}
+                                        readOnly // Make it read-only so date is automatically captured
                                         required
                                     />
                                 </div>
