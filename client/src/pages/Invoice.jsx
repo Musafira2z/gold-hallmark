@@ -80,7 +80,7 @@ const Invoice = () => {
                 </div>
 
                 <h2 className="text-md font-bold">Order Details</h2>
-                <table className="w-full border-collapse border border-gray-300 text-left">
+                <table className="w-full border-collapse border border-gray-600 text-left">
                     <thead className="bg-gray-100">
                         <tr>
                             <th className="border border-gray-600 text-sm px-4 py-2">Item Name</th>
@@ -94,12 +94,12 @@ const Invoice = () => {
                     <tbody>
                         {order.items.map((item, index) => ( // Map over items array
                             <tr key={index}>
-                                <td className="border border-gray-300 px-4 text-sm py-0">{item.item}</td>
-                                <td className="border border-gray-300 px-4 text-sm py-0">{item.quantity}</td>
-                                <td className="border border-gray-300 px-4 text-sm py-0">{item.rate}</td>
-                                <td className="border border-gray-300 px-4 text-sm py-0">{item.weight} {item.weightUnite}</td>
-                                <td className="border border-gray-300 px-4 text-sm py-0">{item.xray}</td> {/* Assuming xray applies to all items */}
-                                <td className="border border-gray-300 px-4 text-sm py-0">{item.amount}</td>
+                                <td className="border border-gray-600 px-4 text-sm py-0">{item.item}</td>
+                                <td className="border border-gray-600 px-4 text-sm py-0">{item.quantity}</td>
+                                <td className="border border-gray-600 px-4 text-sm py-0">{item.rate}</td>
+                                <td className="border border-gray-600 px-4 text-sm py-0">{item.weight} {item.weightUnite}</td>
+                                <td className="border border-gray-600 px-4 text-sm py-0">{item.xray}</td> {/* Assuming xray applies to all items */}
+                                <td className="border border-gray-600 px-4 text-sm py-0">{item.amount}</td>
                             </tr>
                         ))}
                     </tbody>
@@ -117,10 +117,10 @@ const Invoice = () => {
                 </div>
 
                 <div className="flex justify-between items-center mt-6">
-                    <div className="border-t border-gray-300 text-center px-4">
+                    <div className="border-t border-gray-600 text-center px-4">
                         <p className="text-sm">Customer Signature</p>
                     </div>
-                    <div className="border-t border-gray-300 text-center px-4">
+                    <div className="border-t border-gray-600 text-center px-4">
                         <p className="text-sm">Authorized Signature</p>
                     </div>
                 </div>
