@@ -26,7 +26,7 @@
     .print-content table,
     .print-content th,
     .print-content td {
-      border-width: 2px !important;
+      border-width: 1px !important;
       border-color: #222 !important;
       border-style: solid !important;
     }

@@ -449,7 +449,7 @@ const Xray = () => {
                                                     data-field={`${index}-quantity`}
                                                     onChange={(e) => handleItemChange(index, "quantity", e.target.value)}
                                                     onKeyPress={(e) => handleKeyPress(index, "quantity", e)}
-                                                    onWheel={e => e.target.blur()} // Prevent mouse wheel changes
+                                                    onWheel={e => { e.target.blur(); e.preventDefault(); }} // Maximum scroll prevention
                                                 />
                                             </div>
                                             <div>
@@ -462,7 +462,7 @@ const Xray = () => {
                                                     data-field={`${index}-rate`}
                                                     onChange={(e) => handleItemChange(index, "rate", e.target.value)}
                                                     onKeyPress={(e) => handleKeyPress(index, "rate", e)}
-                                                    onWheel={e => e.target.blur()} // Prevent mouse wheel changes
+                                                    onWheel={e => { e.target.blur(); e.preventDefault(); }} // Maximum scroll prevention
                                                 />
                                             </div>
                                         </div>
@@ -477,7 +477,7 @@ const Xray = () => {
                                                     data-field={`${index}-weight`}
                                                     onChange={(e) => handleItemChange(index, "weight", e.target.value)}
                                                     onKeyPress={(e) => handleKeyPress(index, "weight", e)}
-                                                    onWheel={e => e.target.blur()} // Prevent mouse wheel changes
+                                                    onWheel={e => { e.target.blur(); e.preventDefault(); }} // Maximum scroll prevention
                                                 />
                                             </div>
                                             <select
