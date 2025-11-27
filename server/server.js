@@ -4,9 +4,11 @@ const cors = require("cors");
 const path = require("path");
 
 const connectDB = require("./config/db"); // Import database connection
+const { ensureDefaultItems } = require("./services/itemService");
 
 const userRoutes = require("./routes/userRoutes");
 const orderRoutes = require("./routes/orderRoutes");
+const itemRoutes = require("./routes/itemRoutes");
 
 const app = express();
 
@@ -17,12 +19,21 @@ app.use(express.json());
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Connect to MongoDB
-connectDB().then(r => console.log("Connected to the database..."));
+connectDB()
+    .then(async () => {
+        console.log("Connected to the database...");
+        await ensureDefaultItems();
+        console.log("Default item names are synced.");
+    })
+    .catch((error) => {
+        console.error("Failed to connect to the database", error);
+        process.exit(1);
+    });
 
 // Use routes
 app.use("/users", userRoutes);
 app.use("/orders", orderRoutes);
-app.use("/orders", orderRoutes);
+app.use("/items", itemRoutes);
 
 app.get("/", (req, res) => {
     res.json("Welcome to Gold Hallmark API");

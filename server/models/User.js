@@ -3,7 +3,7 @@ const mongoose = require("mongoose");
 const userSchema = new mongoose.Schema({
         customerID: Number,
         name: String,
-        contact: Number,
+        contact: String, // Changed to String to preserve leading zeros
         company: [String],
         address: String,
         image: String

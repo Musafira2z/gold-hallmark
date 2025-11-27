@@ -20,10 +20,55 @@ const Invoice = () => {
 
                     // Wait for a short delay to ensure the DOM renders
                     setTimeout(() => {
-                        window.print();
-                        window.onafterprint = () => {
-                            window.close();
+                        let isClosing = false;
+
+                        // Function to close the window
+                        const closeWindow = () => {
+                            if (!isClosing) {
+                                isClosing = true;
+                                try {
+                                    window.close();
+                                    // If window.close() doesn't work (blocked by browser), try to redirect
+                                    if (!window.closed) {
+                                        setTimeout(() => {
+                                            window.location.href = 'about:blank';
+                                        }, 100);
+                                    }
+                                } catch (error) {
+                                    console.log('Could not close window:', error);
+                                }
+                            }
                         };
+
+                        // Method 1: onafterprint event (most reliable)
+                        window.onafterprint = () => {
+                            setTimeout(closeWindow, 200);
+                        };
+
+                        // Method 2: matchMedia listener for print media query
+                        const mediaQueryList = window.matchMedia('print');
+                        const handleMediaChange = (mql) => {
+                            if (!mql.matches) {
+                                // Print dialog closed
+                                setTimeout(closeWindow, 200);
+                                // Clean up listener
+                                if (mediaQueryList.removeListener) {
+                                    mediaQueryList.removeListener(handleMediaChange);
+                                } else if (mediaQueryList.removeEventListener) {
+                                    mediaQueryList.removeEventListener('change', handleMediaChange);
+                                }
+                            }
+                        };
+                        
+                        // Add listener (support both old and new API)
+                        if (mediaQueryList.addListener) {
+                            mediaQueryList.addListener(handleMediaChange);
+                        } else if (mediaQueryList.addEventListener) {
+                            mediaQueryList.addEventListener('change', handleMediaChange);
+                        }
+
+                        // Trigger print
+                        window.print();
                     }, 500); // Allow DOM to render before printing
                 }
             } catch (error) {

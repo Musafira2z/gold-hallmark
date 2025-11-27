@@ -1,10 +1,12 @@
 import React, { useContext, useEffect, useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
-import Select from "react-select"; // Import react-select
+import Select from "react-select";
+import CreatableSelect from "react-select/creatable";
 import { apiUrl, UserContext } from "../context/UserContext.jsx";
 import { CgRemove } from "react-icons/cg";
 import { FaCamera } from "react-icons/fa";
+import useItemNames from "../hooks/useItemNames.js";
 
 const Hallmark = () => {
     const { customers } = useContext(UserContext);
@@ -12,72 +14,7 @@ const Hallmark = () => {
     const [totalAmount, setTotalAmount] = useState(0);
     const [selectedCustomerId, setSelectedCustomerId] = useState("");
     const [selectedCompany, setSelectedCompany] = useState("");
-    const itemNames = [
-        "Ayesti",
-        "Aungty",
-        "Baju",
-        "Bala",
-        "Bangle",
-        "Bicha",
-        "Bracelet",
-        "Buttam",
-        "Bati",
-        "Bauti",
-        "Chain",
-        "Chik",
-        "Chur",
-        "Churi",
-        "Chamus",
-        "Chandi-Rupa",
-        "Center piss",
-        "Court pin",
-        "Dul",
-        "Earring pair",
-        "Ghaar tana pair",
-        "Glass",
-        "Gold",
-        "Haar",
-        "Hair chain pair",
-        "Hath panja",
-        "Jhapta",
-        "Jumka pair",
-        "Kaan tana pair",
-        "Kankon",
-        "Konhkon",
-        "Key",
-        "Kontho chik",
-        "Locket",
-        "Locket & chain",
-        "Mangalsutra",
-        "Mantasha",
-        "Medal",
-        "Madli",
-        "Mukut",
-        "Necklace",
-        "Nose pin",
-        "Noth",
-        "Nupur",
-        "Pasha pair",
-        "Payel",
-        "Pola",
-        "Plate",
-        "Ring",
-        "Ball ring",
-        "Ratan chur",
-        "Shakha",
-        "Side clip",
-        "Sita haar",
-        "Sithi patti",
-        "Silver",
-        "Spcial item",
-        "Shakha piss",
-        "Sui suta",
-        "Tikly",
-        "Taj",
-        "Tabic,",
-        "Tip",
-        "Zoroa haar"
-    ];
+    const { itemOptions, loading: itemLoading, createItem } = useItemNames("hallmark");
     const [items, setItems] = useState([
         { item: "", quantity: "Quantity", rate: "Rate", weight: "Weight", amount: "", weightUnite: "gm", xray: "" }, // Initial item
     ]);
@@ -123,6 +60,13 @@ const Hallmark = () => {
             setTotalAmount(calculateTotal(addedItems.flat().concat(newItems)));
             return newItems;
         });
+    };
+
+    const handleCreateItemOption = async (index, inputValue) => {
+        const newOption = await createItem(inputValue);
+        if (newOption) {
+            handleItemChange(index, "item", newOption.value);
+        }
     };
 
     // Handle keyboard navigation for item fields
@@ -218,19 +162,56 @@ const Hallmark = () => {
         contact: customer.contact,
     }));
 
-    // Custom filter to allow searching by ID or phone
+    // Custom filter: 1-2 digits = Customer ID search, 3+ digits = Phone Number search
+    // Handles both old users (contact as Number) and new users (contact as String)
     const filterOption = (option, inputValue) => {
-        const { label, contact, value } = option;
-        const valueStr = value ? String(value).toLowerCase() : "";
-        const contactStr = contact ? String(contact).toLowerCase() : "";
-        const labelStr = label ? String(label).toLowerCase() : "";
-        const inputStr = inputValue ? inputValue.toLowerCase() : "";
-
-        return (
-            labelStr.includes(inputStr) ||
-            contactStr.includes(inputStr) ||
-            valueStr.includes(inputStr)
-        );
+        if (!inputValue || !inputValue.trim()) return true;
+        
+        const { contact, value } = option;
+        const inputStr = inputValue.trim();
+        
+        // Extract only digits from input for comparison
+        const inputDigits = inputStr.replace(/\D/g, '');
+        const inputLength = inputDigits.length;
+        
+        if (inputLength === 0) return true;
+        
+        // Convert to strings and extract digits for comparison
+        let customerIDStr = "";
+        let phoneStr = "";
+        
+        // Handle Customer ID
+        if (value !== null && value !== undefined && value !== "") {
+            customerIDStr = String(value).replace(/\D/g, '');
+        }
+        
+        // Handle Phone Number - can be Number (old users) or String (new users)
+        if (contact !== null && contact !== undefined) {
+            // Always convert to string first, regardless of type
+            const contactStr = String(contact);
+            
+            // Extract digits from phone number - remove all non-digits
+            if (contactStr && contactStr !== "" && contactStr !== "undefined" && contactStr !== "null") {
+                phoneStr = contactStr.replace(/\D/g, '');
+            }
+        }
+        
+        // 1-2 digits: search in Customer ID only
+        if (inputLength >= 1 && inputLength <= 2) {
+            if (!customerIDStr) return false;
+            const matches = customerIDStr.startsWith(inputDigits) || customerIDStr === inputDigits;
+            return matches;
+        }
+        
+        // 3+ digits: search in Phone Number only (works for both Number and String)
+        if (inputLength >= 3) {
+            if (!phoneStr || phoneStr.length === 0) return false;
+            // Check if phone number starts with input or contains input
+            const matches = phoneStr.startsWith(inputDigits) || phoneStr.includes(inputDigits);
+            return matches;
+        }
+        
+        return false;
     };
 
     const handleCustomerSelect = (selectedOption) => {
@@ -268,6 +249,24 @@ const Hallmark = () => {
         // Check whether the fields are not empty before pushing them into `allItems`
         if (items[0].item !== "" && items[0].quantity !== "" && items[0].rate !== "") {
             allItems.push(items);
+        }
+
+        // Validate that at least one item is added
+        if (allItems.length === 0 || allItems.flat().length === 0) {
+            alert('Please add at least one product/item before submitting.');
+            return;
+        }
+
+        // Validate that all items have required fields
+        const hasValidItems = allItems.flat().some(item => 
+            item.item && item.item !== "" && 
+            item.quantity && item.quantity !== "" && 
+            item.rate && item.rate !== ""
+        );
+        
+        if (!hasValidItems) {
+            alert('Please fill in all required product fields (Item, Quantity, Rate) before submitting.');
+            return;
         }
 
         const calculatedTotalAmount = totalAmount;
@@ -383,15 +382,41 @@ const Hallmark = () => {
 
 
     return (
-        <div className="min-h-screen p-6 flex justify-center">
-            <div className="bg-white p-8 rounded-lg shadow-md w-full mt-6">
-                <h1 className="text-2xl font-semibold text-[#004D40] mb-6">Hallmark</h1>
-                <form onSubmit={handleSubmit}>
-                    <div className="flex flex-col lg:flex-row gap-10">
-                        <div className="border border-gray-100 shadow-sm p-3" >
-                            <div className="space-y-4 px-3 py-4">
-                                <div className="mb-4">
-                                    <label htmlFor="customerID" className="block text-[#004D40] font-bold mb-1">
+        <div className="min-h-screen">
+            <div className="card-modern w-full">
+                <div className="mb-6">
+                    <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent mb-2">
+                        Hallmark Service
+                    </h1>
+                    <p className="text-gray-500">Create and manage hallmark orders</p>
+                </div>
+                <form onSubmit={handleSubmit} onKeyDown={(e) => {
+                    // Prevent form submission on Enter if no items are added
+                    if (e.key === 'Enter') {
+                        const allItems = [...addedItems];
+                        if (items[0].item !== "" && items[0].quantity !== "" && items[0].rate !== "") {
+                            allItems.push(items);
+                        }
+                        
+                        // If no items added, prevent form submission
+                        if (allItems.length === 0 || allItems.flat().length === 0) {
+                            e.preventDefault();
+                            return;
+                        }
+                        
+                        // Check if Enter is pressed in customer selection fields
+                        const target = e.target;
+                        if (target.id === 'customerID' || target.id === 'name' || target.id === 'company' || target.closest('.css-1pahdxg-control') || target.closest('.css-1hwfws3')) {
+                            e.preventDefault();
+                            return;
+                        }
+                    }
+                }}>
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <div className="card-modern bg-gradient-to-br from-gray-50 to-white" >
+                            <div className="space-y-5">
+                                <div>
+                                    <label htmlFor="customerID" className="block text-sm font-semibold text-gray-700 mb-2">
                                         Customer ID or Phone Number
                                     </label>
                                     <Select
@@ -401,28 +426,34 @@ const Hallmark = () => {
                                         onChange={handleCustomerSelect}
                                         filterOption={filterOption}
                                         isClearable
+                                        isSearchable
                                         placeholder="Search by ID or phone number..."
+                                        onKeyDown={(e) => {
+                                            if (e.key === 'Enter') {
+                                                e.preventDefault();
+                                            }
+                                        }}
                                     />
                                 </div>
                                 <div>
-                                    <label htmlFor="name" className="block text-[#004D40] font-bold mb-1">
+                                    <label htmlFor="name" className="block text-sm font-semibold text-gray-700 mb-2">
                                         Customer Name
                                     </label>
                                     <input
                                         id="name"
                                         type="text"
                                         readOnly
-                                        className="w-full border-b border-gray-300 p-2 text-[#004D40]"
+                                        className="input-modern bg-gray-50"
                                         value={formData.name} // Display name based on selected ID
                                     />
                                 </div>
                                 <div>
-                                    <label htmlFor="company" className="block text-[#004D40] font-bold mb-1">
+                                    <label htmlFor="company" className="block text-sm font-semibold text-gray-700 mb-2">
                                         Company
                                     </label>
                                     <select // Change to select dropdown
                                         id="company"
-                                        className="w-full border-b border-gray-300 p-2"
+                                        className="input-modern"
                                         value={selectedCompany}
                                         onChange={handleCompanyChange}
                                     >
@@ -441,19 +472,25 @@ const Hallmark = () => {
                                 {items.map((item, index) => (
                                     <div key={index} className="flex  flex-col gap-y-3 p-2 rounded">
                                         <div>
-                                            <label htmlFor="item" className="block text-[#004D40] font-bold mb">Item Name</label>
-                                            <Select
-                                                options={itemNames.map(name => ({ value: name, label: name }))}
-                                                id="item"
+                                            <label htmlFor="item" className="block text-sm font-semibold text-gray-700 mb-2">Item Name</label>
+                                            <CreatableSelect
+                                                id={`hallmark-item-${index}`}
                                                 className="w-full border-b border-gray-300 p-2"
-                                                onChange={(selectedOption) => handleItemChange(index, "item", selectedOption.value)}
+                                                value={item.item ? { value: item.item, label: item.item } : null}
+                                                options={itemOptions}
+                                                isClearable
+                                                isLoading={itemLoading}
+                                                onChange={(selectedOption) => handleItemChange(index, "item", selectedOption?.value || "")}
+                                                onCreateOption={(inputValue) => handleCreateItemOption(index, inputValue)}
+                                                placeholder="Select or add item..."
+                                                formatCreateLabel={(inputValue) => `Add "${inputValue}"`}
                                             />
                                         </div>
                                         <div className="flex gap-x-5">
                                             <div>
-                                                <label htmlFor="item" className="block text-[#004D40] font-bold mb">Quantity</label>
+                                                <label htmlFor="item" className="block text-sm font-semibold text-gray-700 mb-2">Quantity</label>
                                                 <input
-                                                    className="border-b border-gray-300 p-2"
+                                                    className="input-modern"
                                                     type="number"
                                                     placeholder="Quantity"
                                                     value={item.quantity}
@@ -464,9 +501,9 @@ const Hallmark = () => {
                                                 />
                                             </div>
                                             <div>
-                                                <label htmlFor="item" className="block text-[#004D40] font-bold mb">Rate (BDT)</label>
+                                                <label htmlFor="item" className="block text-sm font-semibold text-gray-700 mb-2">Rate (BDT)</label>
                                                 <input
-                                                    className="border-b border-gray-300 p-2"
+                                                    className="input-modern"
                                                     type="number"
                                                     placeholder="Rate"
                                                     value={item.rate}
@@ -479,10 +516,10 @@ const Hallmark = () => {
                                         </div>
                                         <div className="flex space-x-2">  {/* Weight Input */}
                                             <div>
-                                                <label htmlFor="item" className="block text-[#004D40] font-bold mb">Weight and Unite</label>
+                                                <label htmlFor="item" className="block text-sm font-semibold text-gray-700 mb-2">Weight and Unit</label>
                                                 <input
                                                     type="number"
-                                                    className="w-2/3 border-b border-gray-300 p-2"
+                                                    className="w-2/3 input-modern"
                                                     placeholder="Weight"
                                                     value={item.weight}
                                                     data-field={`${index}-weight`}
@@ -504,9 +541,9 @@ const Hallmark = () => {
                                         </div>
 
                                         <div>
-                                            <label htmlFor="item" className="block text-[#004D40] font-bold mb">Total (BDT)</label>
+                                            <label htmlFor="item" className="block text-sm font-semibold text-gray-700 mb-2">Total (BDT)</label>
                                             <input
-                                                className="p-2"
+                                                className="input-modern bg-gray-50"
                                                 type="text"
                                                 placeholder="Amount"
                                                 value={item.amount}
@@ -514,13 +551,13 @@ const Hallmark = () => {
                                             />
                                         </div>
                                         <div>
-                                            <label htmlFor="item" className="block text-[#004D40] font-bold mb-1">
+                                            <label htmlFor="item" className="block text-sm font-semibold text-gray-700 mb-2">
                                                 Hallmark
                                             </label>
                                             <input
                                                 id=""
                                                 type="text"
-                                                className="w-full border-b border-gray-300 p-2"
+                                                className="input-modern"
                                                 value={item.xray}
                                                 data-field={`${index}-xray`}
                                                 onChange={(e) => handleItemChange(index, "xray", e.target.value)}
@@ -529,54 +566,58 @@ const Hallmark = () => {
                                         </div>
                                     </div>
                                 ))}
-                                <button type="button" className="w-full px-3 py-2 text-white bg-[#004D40] border-[#004D40] rounded-lg" onClick={addItem}>
+                                <button type="button" className="btn-primary w-full" onClick={addItem}>
                                     Add Item
                                 </button>
                             </div>
                         </div>
-                        <div className="w-full space-y-5 border border-gray-100 shadow-sm p-3">
+                        <div className="card-modern space-y-6">
                             <div className="space-y-4 items-list"> {/* Right Section - Table */}
-                                <table className="w-full border-collapse">
+                                <div className="table-modern">
+                                <table className="w-full">
                                     <thead>
                                         <tr>
-                                            <th className="border p-2">Item</th>
-                                            <th className="border p-2">Quantity</th>
-                                            <th className="border p-2">Rate</th>
-                                            <th className="border p-2">Weight</th>
-                                            <th className="border p-2">Amount</th>
-                                            <th className="border p-2">Delete</th>
+                                            <th>Item</th>
+                                            <th>Quantity</th>
+                                            <th>Rate</th>
+                                            <th>Weight</th>
+                                            <th>Amount</th>
+                                            <th>Delete</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         {addedItems.flat().map((item, index) => ( // Display all added items
                                             <tr key={index}>
-                                                <td className="border p-2">{item.item}</td>
-                                                <td className="border p-2">{item.quantity}</td>
-                                                <td className="border p-2">{item.rate}</td>
-                                                <td className="border p-2">{item.weight} {item.weightUnite}</td>
-                                                <td className="border p-2">{item.amount}</td>
-                                                <td className="border p-2 text-center">
-                                                    <button className="text-red-600 text-xl" onClick={() => deleteItem(index)}>
+                                                <td>{item.item}</td>
+                                                <td>{item.quantity}</td>
+                                                <td>{item.rate}</td>
+                                                <td>{item.weight} {item.weightUnite}</td>
+                                                <td>{item.amount}</td>
+                                                <td className="text-center">
+                                                    <button className="text-red-500 hover:text-red-700 text-xl transition-colors" onClick={() => deleteItem(index)}>
                                                         <CgRemove />
                                                     </button>
                                                 </td>
                                             </tr>
                                         ))}
-                                        <tr>
-                                            <td htmlFor="totalAmount" colSpan="4" className="border p-2 text-right font-bold">Total:</td>
-                                            <td id="totalAmount" className="border p-2 font-bold">{totalAmount.toFixed(2)}</td>
+                                        <tr className="bg-gray-50 font-semibold">
+                                            <td colSpan="4" className="text-right">Total:</td>
+                                            <td className="text-blue-600">{totalAmount.toFixed(2)}</td>
+                                            <td></td>
                                         </tr>
                                     </tbody>
                                 </table>
+                                </div>
                             </div>
                             <div className="flex flex-col gap-5">
                                 <div>
-                                    <label htmlFor="customerFrom" className="block text-[#004D40] font-bold">
-                                        Delivery Date                                    </label>
+                                    <label htmlFor="customerFrom" className="block text-sm font-semibold text-gray-700 mb-2">
+                                        Delivery Date
+                                    </label>
                                     <input
                                         id="customerFrom"
                                         type="date"
-                                        className="w-full border-b border-gray-300 p-2"
+                                        className="input-modern"
                                         value={formData.customerFrom}
                                         onChange={handleInputChange}
                                         readOnly // Make it read-only so date is automatically captured
@@ -584,7 +625,7 @@ const Hallmark = () => {
                                     />
                                 </div>
                                 <div>
-                                    <label htmlFor="image" className="block text-[#004D40] font-bold ">
+                                    <label htmlFor="image" className="block text-sm font-semibold text-gray-700 mb-2">
                                         Upload Image
                                     </label>
                                     {capturedImage && (
@@ -604,7 +645,7 @@ const Hallmark = () => {
                                     <button
                                         type="button"
                                         onClick={openCamera}
-                                        className="w-full lg:w-1/2 px-3 py-2 text-white bg-[#004D40] border-[#004D40] rounded-lg my-3 flex text-center justify-center items-center gap-2"
+                                        className="btn-secondary w-full lg:w-1/2 my-3 flex text-center justify-center items-center gap-2"
                                     >
                                         <FaCamera/>
                                         Open Camera
@@ -612,7 +653,7 @@ const Hallmark = () => {
                                 </div>
                             </div>
                             <div>
-                                <button type="submit" className="bg-[#004D40] text-white py-2 px-4 rounded-lg">
+                                <button type="submit" className="btn-primary w-full lg:w-auto">
                                     Submit & Print
                                 </button>
                             </div>

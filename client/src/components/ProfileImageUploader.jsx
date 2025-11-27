@@ -2,7 +2,7 @@ import React, { useRef, useState } from "react";
 import PropTypes from "prop-types";
 import userImg from "../assets/imageDefault.png";
 
-const ProfileImageUploader = ({ onImageSelect }) => {
+const ProfileImageUploader = ({ onImageSelect, compact = false }) => {
   const fileInputRef = useRef(null);
   const [image, setImage] = useState(userImg); // Default placeholder image
   const [isCameraOpen, setIsCameraOpen] = useState(false); // State to toggle camera
@@ -94,11 +94,79 @@ const ProfileImageUploader = ({ onImageSelect }) => {
     setIsCameraOpen(false);
   };
 
+  // Compact mode for inline display
+  if (compact) {
+    return (
+      <div className="flex items-center w-full gap-3">
+        {/* Small Profile Image */}
+        <div
+          className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center cursor-pointer overflow-hidden border-2 border-gray-300 hover:border-blue-400 transition-all flex-shrink-0"
+          onClick={handleImageClick}
+        >
+          <img
+            src={image}
+            alt="Profile"
+            className="w-full h-full object-cover rounded-full"
+          />
+        </div>
+        <input
+          type="file"
+          ref={fileInputRef}
+          accept="image/*"
+          className="hidden"
+          onChange={handleFileChange}
+        />
+        <div className="flex gap-2 flex-1">
+          <button
+            type="button"
+            onClick={handleImageClick}
+            className="flex-1 px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-all duration-200 text-sm font-medium"
+          >
+            Upload
+          </button>
+          <button
+            type="button"
+            onClick={handleOpenCamera}
+            className="flex-1 px-3 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 text-sm font-medium"
+          >
+            Camera
+          </button>
+        </div>
+
+        {/* Camera Modal */}
+        {isCameraOpen && (
+          <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50">
+            <div className="relative bg-white p-4 rounded-lg">
+              <video ref={videoRef} className="w-64 h-48 bg-black rounded-lg" />
+              <canvas ref={canvasRef} className="hidden" />
+
+              <div className="mt-4 flex justify-between gap-4">
+                <button
+                  onClick={handleCaptureImage}
+                  className="px-6 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg shadow-md hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 font-medium"
+                >
+                  Capture
+                </button>
+                <button
+                  onClick={handleCloseCamera}
+                  className="px-6 py-2 bg-gray-500 text-white rounded-lg shadow-md hover:bg-gray-600 transition-all duration-200 font-medium"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // Full size mode (original)
   return (
-    <div className="flex flex-col w-1/3 items-center justify-center space-y-4 mt-6 sm:mt-0">
+    <div className="flex flex-col w-full items-center justify-center space-y-6">
       {/* Clickable Profile Image */}
       <div
-        className="w-44 h-44 bg-gray-200 rounded-full flex items-center justify-center shadow-md cursor-pointer overflow-hidden"
+        className="w-48 h-48 bg-gray-200 rounded-full flex items-center justify-center shadow-lg cursor-pointer overflow-hidden border-4 border-gray-300 hover:border-blue-400 transition-all"
         onClick={handleImageClick}
       >
         <img
@@ -108,7 +176,7 @@ const ProfileImageUploader = ({ onImageSelect }) => {
         />
       </div>
       {/* Hidden File Input */}
-      <div className="flex flex-col items-center">
+      <div className="flex flex-col items-center w-full max-w-md">
         <input
           type="file"
           ref={fileInputRef}
@@ -121,7 +189,7 @@ const ProfileImageUploader = ({ onImageSelect }) => {
           <button
             type="button"
             onClick={handleRemoveImage}
-            className="px-4 py-2 bg-[#6eb8ac] text-white rounded-lg hover:bg-red-100 hover:text-red-600"
+            className="flex-1 px-6 py-3 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-all duration-200 font-medium shadow-md hover:shadow-lg"
           >
             Remove
           </button>
@@ -130,7 +198,7 @@ const ProfileImageUploader = ({ onImageSelect }) => {
           <button
             type="button"
             onClick={handleOpenCamera}
-            className="w-full px-4 py-2 bg-[#004D40] text-white rounded-lg hover:bg-[#00332E]"
+            className="flex-1 px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 font-medium shadow-md hover:shadow-lg"
           >
             Camera
           </button>
@@ -144,16 +212,16 @@ const ProfileImageUploader = ({ onImageSelect }) => {
             <video ref={videoRef} className="w-64 h-48 bg-black rounded-lg" />
             <canvas ref={canvasRef} className="hidden" />
 
-            <div className="mt-4 flex justify-between">
+            <div className="mt-4 flex justify-between gap-4">
               <button
                 onClick={handleCaptureImage}
-                className="px-4 py-2 bg-green-500 text-white rounded-lg shadow hover:bg-green-700"
+                className="px-6 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg shadow-md hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 font-medium"
               >
                 Capture
               </button>
               <button
                 onClick={handleCloseCamera}
-                className="px-4 py-2 bg-red-500 text-white rounded-lg shadow hover:bg-red-700"
+                className="px-6 py-2 bg-gray-500 text-white rounded-lg shadow-md hover:bg-gray-600 transition-all duration-200 font-medium"
               >
                 Cancel
               </button>
@@ -167,6 +235,7 @@ const ProfileImageUploader = ({ onImageSelect }) => {
 
 ProfileImageUploader.propTypes = {
   onImageSelect: PropTypes.func, // Callback to pass the selected image file to parent
+  compact: PropTypes.bool, // If true, renders a compact inline version
 };
 
 export default ProfileImageUploader;

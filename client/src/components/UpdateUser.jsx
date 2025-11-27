@@ -24,6 +24,7 @@ function UpdateUser() {
         address: "",
         image: null,
     });
+    const [contactError, setContactError] = useState('');
 
     // Pre-fill form when customer is found
     useEffect(() => {
@@ -46,6 +47,26 @@ function UpdateUser() {
         setCustomer({ ...customer, [e.target.name]: e.target.value });
     };
 
+    const handleContactChange = (e) => {
+        const value = e.target.value;
+        // Only allow digits
+        const digitsOnly = value.replace(/\D/g, '');
+        
+        // Limit to 11 digits
+        if (digitsOnly.length <= 11) {
+            setCustomer({ ...customer, contact: digitsOnly });
+            
+            // Validation
+            if (digitsOnly.length > 0 && digitsOnly.length < 11) {
+                setContactError('Phone number must be exactly 11 digits');
+            } else if (digitsOnly.length === 11) {
+                setContactError('');
+            } else {
+                setContactError('');
+            }
+        }
+    };
+
     const handleAddTag = (e) => {
         if (e.key === "," && e.target.value.trim() !== "") {
             setCustomer({
@@ -65,11 +86,19 @@ function UpdateUser() {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        
+        // Validate contact before submission
+        const contactDigits = String(customer.contact).replace(/\D/g, '');
+        if (contactDigits.length !== 11) {
+            setContactError('Phone number must be exactly 11 digits');
+            return;
+        }
+        
         try {
             const formData = new FormData();
             formData.append("customerID", customer.customerID);
             formData.append("name", customer.name);
-            formData.append("contact", customer.contact);
+            formData.append("contact", contactDigits); // Send as string to preserve leading zeros
             customer.company.forEach((comp) => formData.append("company[]", comp));
             formData.append("address", customer.address);
             if (selectedImage) {
@@ -145,14 +174,27 @@ function UpdateUser() {
 
                     {/* Contact */}
                     <div className="flex flex-col sm:flex-row sm:items-center">
-                        <input
-                            type="text"
-                            name="contact"
-                            className="flex-1 px-3 py-2 bg-[#E0F2F1] rounded-lg focus:ring focus:ring-blue-200 placeholder:text-[#004D40]"
-                            placeholder="Contact No"
-                            value={customer.contact}
-                            onChange={handleChange}
-                        />
+                        <div className="flex-1">
+                            <input
+                                type="text"
+                                name="contact"
+                                className={`flex-1 w-full px-3 py-2 bg-[#E0F2F1] rounded-lg focus:ring focus:ring-blue-200 placeholder:text-[#004D40] ${
+                                    contactError ? 'border-2 border-red-500' : ''
+                                }`}
+                                placeholder="Contact No (11 digits)"
+                                value={customer.contact}
+                                onChange={handleContactChange}
+                                maxLength={11}
+                            />
+                            {contactError && (
+                                <p className="text-red-500 text-sm mt-1">{contactError}</p>
+                            )}
+                            {customer.contact && customer.contact.length > 0 && customer.contact.length < 11 && (
+                                <p className="text-red-500 text-sm mt-1">
+                                    {11 - customer.contact.length} more digit(s) required
+                                </p>
+                            )}
+                        </div>
                     </div>
 
                     {/* Custom Tag Input for Companies */}

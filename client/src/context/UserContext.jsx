@@ -4,9 +4,26 @@ import PropTypes from "prop-types";
 // eslint-disable-next-line react-refresh/only-export-components
 export const UserContext = createContext();
 
-// Get the base URL from the environment variable
-// eslint-disable-next-line no-undef,react-refresh/only-export-components
-export const apiUrl = import.meta.env.REACT_APP_API_URL || 'http://localhost:5000'; // Fallback to localhost if not defined
+const resolveApiUrl = () => {
+    const envUrl = (import.meta.env.VITE_API_URL || import.meta.env.REACT_APP_API_URL || "").trim();
+    const hasCustomEnv = envUrl.length > 0;
+
+    // When the env points to the docker-internal host (e.g. http://server:5000) the browser cannot resolve it.
+    if (hasCustomEnv && !envUrl.includes("://server")) {
+        return envUrl.replace(/\/$/, "");
+    }
+
+    if (typeof window !== "undefined") {
+        const { protocol, hostname } = window.location;
+        const defaultPort = import.meta.env.VITE_API_PORT || 5000;
+        return `${protocol}//${hostname}:${defaultPort}`;
+    }
+
+    return "http://localhost:5000";
+};
+
+// eslint-disable-next-line react-refresh/only-export-components
+export const apiUrl = resolveApiUrl();
 
 const UserContextProvider = ({children}) => {
     const [customers, setCustomers] = useState([]);

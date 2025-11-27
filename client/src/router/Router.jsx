@@ -1,6 +1,9 @@
 import { createBrowserRouter } from "react-router-dom";
 import App from "../App";
-import Home from "../pages/Home";
+import Dashboard from "../pages/Dashboard";
+import AddCustomer from "../pages/AddCustomer";
+import Orders from "../pages/Orders";
+import Account from "../pages/Account";
 import DaySummary from "../components/DaySummary";
 import UpdateUser from "../components/UpdateUser";
 import XRay from "../pages/Xray";
@@ -14,7 +17,19 @@ const router = createBrowserRouter([
         children: [
             {
                 path: "/",
-                element: <Home />
+                element: <Dashboard />
+            },
+            {
+                path: "/add-customer",
+                element: <AddCustomer />
+            },
+            {
+                path: "/orders",
+                element: <Orders />
+            },
+            {
+                path: "/account",
+                element: <Account />
             },
             {
                 path: "/updateuser/:id",
@@ -33,9 +48,9 @@ const router = createBrowserRouter([
                 element: <DaySummary />
             },
             {
-                path: "/invoice/:id", // Invoice page route
+                path: "/invoice/:id",
                 element: <Invoice />,
-              },
+            },
         ]
     },
 ]);

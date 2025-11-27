@@ -1,26 +1,28 @@
 const OrderService = require("../services/orderService");
 
 exports.getOrders = async (req, res) => {
-    const { date } = req.query;  // Date passed in the query parameter
-    console.log("Received date:", date);  // Log received date for debugging
-
-    if (!date || isNaN(new Date(date).getTime())) {
-        return res.status(400).json({ error: "Invalid or missing date parameter" });
-    }
-
-    const startOfDay = new Date(date);
-    startOfDay.setHours(0, 0, 0, 0);  // Set to start of the day
-
-    const endOfDay = new Date(date);
-    endOfDay.setHours(23, 59, 59, 999);  // Set to the end of the day
-
-    console.log("Start of Day:", startOfDay);  // Log for debugging
-    console.log("End of Day:", endOfDay);  // Log for debugging
+    const { date } = req.query;  // Date passed in the query parameter (optional)
 
     try {
-        const orders = await OrderService.getOrdersByDate(startOfDay, endOfDay);
-        console.log("Fetched Orders:", orders);  // Log orders to confirm the result
-        res.json(orders);  // Send orders to the frontend
+        // If date is provided, filter by date
+        if (date) {
+            if (isNaN(new Date(date).getTime())) {
+                return res.status(400).json({ error: "Invalid date parameter" });
+            }
+
+            const startOfDay = new Date(date);
+            startOfDay.setHours(0, 0, 0, 0);  // Set to start of the day
+
+            const endOfDay = new Date(date);
+            endOfDay.setHours(23, 59, 59, 999);  // Set to the end of the day
+
+            const orders = await OrderService.getOrdersByDate(startOfDay, endOfDay);
+            return res.json(orders);
+        } else {
+            // If no date provided, return all orders
+            const orders = await OrderService.getAllOrders();
+            return res.json(orders);
+        }
     } catch (error) {
         console.error('Error fetching orders:', error);
         res.status(500).json({ error: "Failed to fetch orders" });
@@ -49,5 +51,19 @@ exports.getOrderById = async (req, res) => {
         }
     } catch (error) {
         res.status(500).json({ error: "Error fetching order", details: error });
+    }
+};
+
+exports.deleteOrder = async (req, res) => {
+    try {
+        const deletedOrder = await OrderService.deleteOrder(req.params.id);
+        if (deletedOrder) {
+            res.json({ message: "Order deleted successfully", order: deletedOrder });
+        } else {
+            res.status(404).json({ message: "Order not found" });
+        }
+    } catch (error) {
+        console.error("Error deleting order:", error);
+        res.status(500).json({ error: "Failed to delete order", details: error.message });
     }
 };

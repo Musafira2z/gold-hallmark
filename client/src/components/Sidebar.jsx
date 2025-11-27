@@ -18,6 +18,7 @@ import {
   CheckBadgeIcon,
   PencilSquareIcon,
   CircleStackIcon,
+  HomeIcon,
 } from "@heroicons/react/24/solid";
 import { ChevronRightIcon, ChevronDownIcon } from "@heroicons/react/24/outline";
 import { Link } from "react-router-dom";
@@ -53,8 +54,8 @@ function Sidebar() {
       items: [
         {
           id: 1,
-          title: "Add Customers",
-          link: "/",
+          title: "Add Customer",
+          link: "/add-customer",
         },
       ],
     },
@@ -84,14 +85,26 @@ function Sidebar() {
       ],
     },
     {
+      id: 2.5,
+      icon: <InboxIcon className="h-5 w-5" />,
+      title: "Orders",
+      items: [
+        {
+          id: 1,
+          title: "All Orders",
+          link: "/orders",
+        },
+      ],
+    },
+    {
       id: 3,
       icon: <TruckIcon className="h-5 w-5" />,
       title: "Delivery",
       items: [
         {
           id: 1,
-          title: "Add Customers",
-          link: "/",
+          title: "Delivery List",
+          link: "",
         },
       ],
     },
@@ -102,8 +115,8 @@ function Sidebar() {
       items: [
         {
           id: 1,
-          title: "Account",
-          link: "/",
+          title: "Account Overview",
+          link: "/account",
         },
       ],
     },
@@ -115,7 +128,7 @@ function Sidebar() {
         {
           id: 1,
           title: "Confirmation",
-          link: "/",
+          link: "",
         },
       ],
     },
@@ -139,7 +152,7 @@ function Sidebar() {
         {
           id: 1,
           title: "Database",
-          link: "/",
+          link: "",
         },
       ],
     },
@@ -151,104 +164,111 @@ function Sidebar() {
         {
           id: 1,
           title: "Client",
-          link: "/",
+          link: "",
         },
       ],
     },
   ];
 
   return (
-    <div className="flex">
-      {/* Sidebar */}
-      <Card
-        className={`h-full transition-all ${isCollapsed ? "w-20" : "w-64"
-          } max-w-fit lg:max-w-[20rem] p-4 shadow-xl shadow-blue-gray-900/5`}
+    <div className="flex h-full flex-shrink-0">
+      {/* Modern Sidebar with Blue Gradient */}
+      <div
+        className={`h-full bg-gradient-to-b from-blue-700 via-blue-800 to-indigo-900 transition-all duration-300 ${
+          isCollapsed ? "w-20" : "w-64"
+        } shadow-2xl z-50 overflow-y-auto`}
       >
-        {/* Toggle Button */}
-        <button
-          onClick={toggleSidebar}
-          className="p-2 bg-blue-gray-100 rounded hover:bg-blue-gray-200 transition text-[#004D40]"
-        >
-          {isCollapsed ? "Exp" : "Coll"}
-        </button>
+        <div className="p-4">
+          {/* Toggle Button */}
+          <button
+            onClick={toggleSidebar}
+            className="w-full p-3 bg-white/10 hover:bg-white/20 backdrop-blur-sm rounded-lg transition-all duration-200 flex items-center justify-center text-white mb-4 shadow-lg border border-white/10"
+          >
+            {isCollapsed ? (
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            ) : (
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+            )}
+          </button>
 
-        {/* Sidebar Menu */}
-        <List
-          className=""
-        >
-          {menuItems.map((menuItem) => (
-            <Accordion
-              key={menuItem.id}
-              open={!isCollapsed && open === menuItem.id}
-              className=""
-              icon={
-                !isCollapsed && (
-                  <ChevronDownIcon
-                    strokeWidth={2.5}
-                    className={`mx-auto h-0 w-4 transition-transform text-[#004D40] ${open === menuItem.id ? "rotate-180" : ""
-                      }`}
-                  />
-                )
-              }
-            >
-              <ListItem
-                className={`flex items-center text-[#004D40] text-xl${isCollapsed
-                  ? "hover:bg-blue-gray-100 rounded-full px-2 w-12 justify-center text-[#004D40] text-xl"
-                  : "hover:bg-blue-gray-50 rounded-lg px-3 text-[#004D40] text-xl"
-                  } transition-all`}
-                selected={!isCollapsed && open === menuItem.id}
-                onClick={() => handleIconClick(menuItem.id)}
-              >
-                <AccordionHeader
-                  className="border-b-0 text-[#004D40] p-0"
-                  onClick={(e) => e.preventDefault()} // Prevent auto toggle
-                >
-                  <ListItemPrefix>
-                    {menuItem.icon}
-                  </ListItemPrefix>
-                  {!isCollapsed && (
-                    <Typography
-
-                      className="mr-auto  font-bold text-[#004D40]"
-                    >
-                      {menuItem.title}
-                    </Typography>
-                  )}
-                </AccordionHeader>
-              </ListItem>
+          {/* Dashboard Link */}
+          <Link
+            to="/"
+            className={`w-full flex items-center ${
+              isCollapsed ? "justify-center px-2 py-3" : "px-4 py-3"
+            } rounded-lg transition-all duration-200 text-blue-100 hover:bg-white/10 hover:text-white mb-4`}
+          >
+            <div className="flex items-center space-x-3">
+              <HomeIcon className="h-5 w-5 text-blue-200" />
               {!isCollapsed && (
-                <AccordionBody className="py-0">
-                  <List className="p-0">
+                <span className="font-semibold text-sm">Dashboard</span>
+              )}
+            </div>
+          </Link>
+
+          {/* Sidebar Menu */}
+          <div className="space-y-2">
+            {menuItems.map((menuItem) => (
+              <div key={menuItem.id} className="mb-2">
+                <button
+                  onClick={() => handleIconClick(menuItem.id)}
+                  className={`w-full flex items-center ${
+                    isCollapsed ? "justify-center px-2 py-3" : "justify-between px-4 py-3"
+                  } rounded-lg transition-all duration-200 ${
+                    !isCollapsed && open === menuItem.id
+                      ? "bg-white text-blue-700 shadow-lg"
+                      : "text-blue-100 hover:bg-white/10 hover:text-white"
+                  }`}
+                >
+                  <div className="flex items-center space-x-3">
+                    <div className={`${!isCollapsed && open === menuItem.id ? "text-blue-600" : "text-blue-200"}`}>
+                      {menuItem.icon}
+                    </div>
+                    {!isCollapsed && (
+                      <span className="font-semibold text-sm">{menuItem.title}</span>
+                    )}
+                  </div>
+                  {!isCollapsed && (
+                    <ChevronDownIcon
+                      className={`w-4 h-4 transition-transform duration-200 ${
+                        open === menuItem.id ? "rotate-180" : ""
+                      }`}
+                    />
+                  )}
+                </button>
+
+                {/* Submenu */}
+                {!isCollapsed && open === menuItem.id && (
+                  <div className="mt-2 ml-4 space-y-1 border-l-2 border-blue-400/30 pl-4">
                     {menuItem.items.map((item) => (
-                      <ListItem key={item.id} className="p-0">
+                      <div key={item.id}>
                         {item.link ? (
                           <Link
                             to={item.link}
-                            className="flex w-full items-center gap-3 px-3 py-2 text-[#004D40] hover:bg-blue-gray-50 rounded-lg transition-all"
+                            className="flex items-center space-x-2 px-3 py-2 text-sm text-blue-200 hover:text-white hover:bg-white/10 rounded-lg transition-all duration-200"
                           >
-                            <ListItemPrefix>
-                              <ChevronRightIcon strokeWidth={3} className="h-3 w-5" />
-                            </ListItemPrefix>
-                            <Typography className="font-medium">{item.title}</Typography>
+                            <ChevronRightIcon className="w-3 h-3" />
+                            <span>{item.title}</span>
                           </Link>
                         ) : (
-                          <div className="flex w-full items-center gap-3 px-3 py-2 text-[#004D40]">
-                            <ListItemPrefix>
-                              <ChevronRightIcon strokeWidth={3} className="h-3 w-5" />
-                            </ListItemPrefix>
-                            <Typography className="font-medium">{item.title}</Typography>
+                          <div className="flex items-center space-x-2 px-3 py-2 text-sm text-blue-300/50">
+                            <ChevronRightIcon className="w-3 h-3" />
+                            <span>{item.title}</span>
                           </div>
                         )}
-                      </ListItem>
+                      </div>
                     ))}
-
-                  </List>
-                </AccordionBody>
-              )}
-            </Accordion>
-          ))}
-        </List>
-      </Card>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

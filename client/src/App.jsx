@@ -9,22 +9,20 @@ function App() {
   const isInvoicePage = location.pathname.includes('/invoice');
 
   return (
-    <div className="bg-[#E0F2F1]">
+    <div className="h-screen flex flex-col bg-gray-50 overflow-hidden">
       {/* Conditionally render Navbar and Sidebar */}
       {!isInvoicePage && (
-        <div className="w-[100%]">
+        <div className="w-full flex-shrink-0">
           <Navbar />
         </div>
       )}
       
       {/* Only show Sidebar if it's not the Invoice page */}
       {!isInvoicePage && (
-        <div className="lg:flex">
-          <div className="ml-2 lg:ml-12 my-10">
-            <Sidebar />
-          </div>
-          <div className="w-full">
-            <div className="mx-2 lg:mx-8">
+        <div className="flex flex-1 overflow-hidden">
+          <Sidebar />
+          <div className="flex-1 overflow-auto">
+            <div className="p-4 lg:p-6">
               <Outlet />
             </div>
           </div>

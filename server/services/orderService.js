@@ -35,3 +35,13 @@ exports.getOrdersByDate = async (startDate, endDate) => {
         throw new Error('Error fetching orders by date');
     }
 };
+
+exports.deleteOrder = async (id) => {
+    try {
+        const deletedOrder = await Order.findByIdAndDelete(id);
+        return deletedOrder;
+    } catch (error) {
+        console.error("Error deleting order:", error);
+        throw new Error('Error deleting order');
+    }
+};
