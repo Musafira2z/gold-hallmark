@@ -5,3 +5,8 @@ server/uploads
 # Backup credentials (never commit these!)
 backup/credentials.txt
 backup/*.conf
+backup/MANUAL_AUTH.md
+backup/SETUP_INSTRUCTIONS.md
+backup/get-token.sh
+# Exclude entire backup directory to prevent committing secrets
+backup/
