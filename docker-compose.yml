@@ -35,6 +35,7 @@ services:
     restart: always
     volumes:
       - mongo-data:/data/db
+      - ./backups:/backups
 
 volumes:
   mongo-data:
