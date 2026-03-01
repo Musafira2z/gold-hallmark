@@ -188,12 +188,14 @@ const OrderServicePage = ({
             phoneStr = contactStr.replace(/\D/g, "");
         }
 
-        if (inputLength <= 2) {
+        if (inputLength <= 5) {
             return customerIDStr && (customerIDStr.startsWith(inputDigits) || customerIDStr === inputDigits);
         }
 
-        if (inputLength >= 3) {
-            return phoneStr && (phoneStr.startsWith(inputDigits) || phoneStr.includes(inputDigits));
+        if (inputLength >= 6) {
+            const matchesCustomerID = customerIDStr && (customerIDStr.startsWith(inputDigits) || customerIDStr === inputDigits);
+            const matchesPhone = phoneStr && (phoneStr.startsWith(inputDigits) || phoneStr.includes(inputDigits));
+            return matchesCustomerID || matchesPhone;
         }
 
         return false;

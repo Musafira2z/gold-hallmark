@@ -2,6 +2,10 @@ client/node_modules
 server/node_modules
 server/uploads
 
+# macOS files
+.DS_Store
+**/.DS_Store
+
 # Backup credentials (never commit these!)
 backup/credentials.txt
 backup/*.conf
