@@ -101,13 +101,21 @@ const OrderServicePage = ({
         if (event.key !== "Enter") return;
         event.preventDefault();
 
-        const fieldOrder = ["quantity", "weight", "rate", "xray"];
+        const fieldOrder = ["quantity", "rate", "weight", "weightUnit", "xray"];
         const currentFieldIndex = fieldOrder.indexOf(field);
 
         if (currentFieldIndex < fieldOrder.length - 1) {
             const nextField = fieldOrder[currentFieldIndex + 1];
-            const nextInput = document.querySelector(`input[data-field="${index}-${nextField}"]`);
-            nextInput?.focus();
+            
+            if (nextField === "weightUnit") {
+                // Focus on weight unit dropdown
+                const nextSelect = document.querySelector(`select[data-field="${index}-${nextField}"]`);
+                nextSelect?.focus();
+            } else {
+                // Focus on regular input field
+                const nextInput = document.querySelector(`input[data-field="${index}-${nextField}"]`);
+                nextInput?.focus();
+            }
             return;
         }
 
@@ -516,7 +524,9 @@ const OrderServicePage = ({
                                             <select
                                                 className="w-1/3 border-b border-gray-300 p-2"
                                                 value={item.weightUnite}
+                                                data-field={`${index}-weightUnit`}
                                                 onChange={(event) => handleItemChange(index, "weightUnite", event.target.value)}
+                                                onKeyPress={(event) => handleKeyPress(index, "weightUnit", event)}
                                             >
                                                 <option value="gm">gm</option>
                                                 <option value="ana">ana</option>
