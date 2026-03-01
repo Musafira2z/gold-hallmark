@@ -107,25 +107,36 @@ const OrderServicePage = ({
         if (currentFieldIndex < fieldOrder.length - 1) {
             const nextField = fieldOrder[currentFieldIndex + 1];
             
-            if (nextField === "weightUnit") {
-                // Focus on weight unit dropdown
-                const nextSelect = document.querySelector(`select[data-field="${index}-${nextField}"]`);
-                nextSelect?.focus();
-            } else {
-                // Focus on regular input field
-                const nextInput = document.querySelector(`input[data-field="${index}-${nextField}"]`);
-                nextInput?.focus();
-            }
+            setTimeout(() => {
+                if (nextField === "weightUnit") {
+                    // Focus on weight unit dropdown
+                    const nextSelect = document.querySelector(`select[data-field="${index}-${nextField}"]`);
+                    if (nextSelect) {
+                        nextSelect.focus();
+                        nextSelect.click(); // Open dropdown
+                    }
+                } else {
+                    // Focus on regular input field
+                    const nextInput = document.querySelector(`input[data-field="${index}-${nextField}"]`);
+                    if (nextInput) {
+                        nextInput.focus();
+                        nextInput.select(); // Select all text for easy replacement
+                    }
+                }
+            }, 50);
             return;
         }
 
+        // If we're at the last field (xray), add item if all required fields are filled
         const currentItem = items[index];
         if (currentItem.item && currentItem.quantity && currentItem.rate) {
             addItem();
             setTimeout(() => {
                 const nextItemInput = document.querySelector(`input[data-field="${index + 1}-quantity"]`);
-                nextItemInput?.focus();
-            }, 100);
+                if (nextItemInput) {
+                    nextItemInput.focus();
+                }
+            }, 150);
         }
     };
 
@@ -480,7 +491,11 @@ const OrderServicePage = ({
                                                     value={item.quantity}
                                                     data-field={`${index}-quantity`}
                                                     onChange={(event) => handleItemChange(index, "quantity", event.target.value)}
-                                                    onKeyPress={(event) => handleKeyPress(index, "quantity", event)}
+                                                    onKeyDown={(event) => {
+                                                        if (event.key === "Enter") {
+                                                            handleKeyPress(index, "quantity", event);
+                                                        }
+                                                    }}
                                                     onWheel={(event) => {
                                                         event.target.blur();
                                                         event.preventDefault();
@@ -496,7 +511,11 @@ const OrderServicePage = ({
                                                     value={item.rate}
                                                     data-field={`${index}-rate`}
                                                     onChange={(event) => handleItemChange(index, "rate", event.target.value)}
-                                                    onKeyPress={(event) => handleKeyPress(index, "rate", event)}
+                                                    onKeyDown={(event) => {
+                                                        if (event.key === "Enter") {
+                                                            handleKeyPress(index, "rate", event);
+                                                        }
+                                                    }}
                                                     onWheel={(event) => {
                                                         event.target.blur();
                                                         event.preventDefault();
@@ -514,7 +533,11 @@ const OrderServicePage = ({
                                                     value={item.weight}
                                                     data-field={`${index}-weight`}
                                                     onChange={(event) => handleItemChange(index, "weight", event.target.value)}
-                                                    onKeyPress={(event) => handleKeyPress(index, "weight", event)}
+                                                    onKeyDown={(event) => {
+                                                        if (event.key === "Enter") {
+                                                            handleKeyPress(index, "weight", event);
+                                                        }
+                                                    }}
                                                     onWheel={(event) => {
                                                         event.target.blur();
                                                         event.preventDefault();
@@ -526,7 +549,11 @@ const OrderServicePage = ({
                                                 value={item.weightUnite}
                                                 data-field={`${index}-weightUnit`}
                                                 onChange={(event) => handleItemChange(index, "weightUnite", event.target.value)}
-                                                onKeyPress={(event) => handleKeyPress(index, "weightUnit", event)}
+                                                onKeyDown={(event) => {
+                                                    if (event.key === "Enter") {
+                                                        handleKeyPress(index, "weightUnit", event);
+                                                    }
+                                                }}
                                             >
                                                 <option value="gm">gm</option>
                                                 <option value="ana">ana</option>
@@ -554,7 +581,11 @@ const OrderServicePage = ({
                                                 value={item.xray}
                                                 data-field={`${index}-xray`}
                                                 onChange={(event) => handleItemChange(index, "xray", event.target.value)}
-                                                onKeyPress={(event) => handleKeyPress(index, "xray", event)}
+                                                onKeyDown={(event) => {
+                                                    if (event.key === "Enter") {
+                                                        handleKeyPress(index, "xray", event);
+                                                    }
+                                                }}
                                             />
                                         </div>
                                     </div>
