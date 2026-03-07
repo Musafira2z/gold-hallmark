@@ -6,6 +6,7 @@ import { CgRemove } from "react-icons/cg";
 import { FaCamera } from "react-icons/fa";
 import { apiUrl, UserContext } from "../context/UserContext.jsx";
 import useItemNames from "../hooks/useItemNames.js";
+import { formatContactForDisplay } from "../utils/formatContact.js";
 
 const createItemState = (prefilledItem = "", withPlaceholders = false) => ({
     item: prefilledItem,
@@ -48,6 +49,7 @@ const OrderServicePage = ({
 
     const [ordersData, setOrdersData] = useState([]);
     const [totalAmount, setTotalAmount] = useState(0);
+    const [searchByType, setSearchByType] = useState("id"); // "id" | "phone"
     const [selectedCustomerId, setSelectedCustomerId] = useState("");
     const [selectedCompany, setSelectedCompany] = useState("");
     const [items, setItems] = useState([createItemState("", true)]);
@@ -58,11 +60,18 @@ const OrderServicePage = ({
     const [capturedImage, setCapturedImage] = useState(null);
     const [imageName, setImageName] = useState("");
 
-    const customerOptions = useMemo(() => customers.map((customer) => ({
-        value: customer.customerID,
-        label: `${customer.customerID} (${customer.contact})`,
-        contact: customer.contact,
-    })), [customers]);
+    const idOptions = useMemo(() =>
+        customers.map((c) => ({ value: c.customerID, label: String(c.customerID) })),
+        [customers]
+    );
+    const phoneOptions = useMemo(() =>
+        customers.map((c) => ({
+            value: c.customerID,
+            label: formatContactForDisplay(c.contact),
+        })),
+        [customers]
+    );
+    const customerOptions = searchByType === "id" ? idOptions : phoneOptions;
 
     const calculateTotal = (pendingItems = []) =>
         pendingItems.reduce((sum, item) => sum + parseFloat(item.amount || 0), 0);
@@ -193,31 +202,25 @@ const OrderServicePage = ({
 
     const filterOption = (option, inputValue) => {
         if (!inputValue?.trim()) return true;
-
-        const { contact, value } = option;
         const inputDigits = inputValue.trim().replace(/\D/g, "");
-        const inputLength = inputDigits.length;
+        if (inputDigits.length === 0) return true;
+        const labelStr = String(option.label ?? "").replace(/\D/g, "");
+        return labelStr.startsWith(inputDigits) || labelStr.includes(inputDigits);
+    };
 
-        if (inputLength === 0) return true;
-
-        const customerIDStr = value ? String(value).replace(/\D/g, "") : "";
-        let phoneStr = "";
-        if (contact !== null && contact !== undefined) {
-            const contactStr = String(contact);
-            phoneStr = contactStr.replace(/\D/g, "");
-        }
-
-        if (inputLength <= 5) {
-            return customerIDStr && (customerIDStr.startsWith(inputDigits) || customerIDStr === inputDigits);
-        }
-
-        if (inputLength >= 6) {
-            const matchesCustomerID = customerIDStr && (customerIDStr.startsWith(inputDigits) || customerIDStr === inputDigits);
-            const matchesPhone = phoneStr && (phoneStr.startsWith(inputDigits) || phoneStr.includes(inputDigits));
-            return matchesCustomerID || matchesPhone;
-        }
-
-        return false;
+    const handleSearchByTypeChange = (e) => {
+        const newType = e.target.value;
+        setSearchByType(newType);
+        setSelectedCustomerId("");
+        setSelectedCompany("");
+        setFormData((prev) => ({
+            ...prev,
+            customerID: "",
+            name: "",
+            company: "",
+            contact: "",
+            address: "",
+        }));
     };
 
     const handleCustomerSelect = (selectedOption) => {
@@ -417,8 +420,22 @@ const OrderServicePage = ({
                         <div className="card-modern bg-gradient-to-br from-gray-50 to-white">
                             <div className="space-y-5">
                                 <div>
+                                    <label htmlFor="searchByType" className="block text-sm font-semibold text-gray-700 mb-2">
+                                        Choose ID or Phone
+                                    </label>
+                                    <select
+                                        id="searchByType"
+                                        className="input-modern mb-4"
+                                        value={searchByType}
+                                        onChange={handleSearchByTypeChange}
+                                    >
+                                        <option value="id">Customer ID</option>
+                                        <option value="phone">Phone Number</option>
+                                    </select>
+                                </div>
+                                <div>
                                     <label htmlFor="customerID" className="block text-sm font-semibold text-gray-700 mb-2">
-                                        Customer ID or Phone Number
+                                        {searchByType === "id" ? "Select Customer ID" : "Select Phone Number"}
                                     </label>
                                     <Select
                                         id="customerID"
@@ -428,7 +445,7 @@ const OrderServicePage = ({
                                         filterOption={filterOption}
                                         isClearable
                                         isSearchable
-                                        placeholder="Search by ID or phone number..."
+                                        placeholder={searchByType === "id" ? "Search or select ID..." : "Search or select phone..."}
                                         onKeyDown={(event) => event.key === "Enter" && event.preventDefault()}
                                     />
                                 </div>
@@ -606,6 +623,7 @@ const OrderServicePage = ({
                                                 <th>Quantity</th>
                                                 <th>Rate</th>
                                                 <th>Weight</th>
+                                                <th>{noteLabel}</th>
                                                 <th>Amount</th>
                                                 <th>Delete</th>
                                             </tr>
@@ -619,6 +637,7 @@ const OrderServicePage = ({
                                                     <td>
                                                         {item.weight} {item.weightUnite}
                                                     </td>
+                                                    <td>{item.xray}</td>
                                                     <td>{item.amount}</td>
                                                     <td className="text-center">
                                                         <button
@@ -632,7 +651,7 @@ const OrderServicePage = ({
                                                 </tr>
                                             ))}
                                             <tr className="bg-gray-50 font-semibold">
-                                                <td colSpan="4" className="text-right">
+                                                <td colSpan="5" className="text-right">
                                                     Total:
                                                 </td>
                                                 <td className="text-blue-600">{totalAmount.toFixed(2)}</td>
