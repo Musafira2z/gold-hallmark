@@ -14,3 +14,6 @@ backup/SETUP_INSTRUCTIONS.md
 backup/get-token.sh
 # Exclude entire backup directory to prevent committing secrets
 backup/
+# Database dumps (contain customer data - never commit)
+backups/*.gz
+backups/*.archive
