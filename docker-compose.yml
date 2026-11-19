@@ -37,5 +37,28 @@ services:
       - mongo-data:/data/db
       - ./backups:/backups
 
+  # Database backup. Uses the same mongo:7 image (nothing new to download).
+  # Backs up every 6 hours while the PC is on, keeps the newest 14 + 8 weekly.
+  # Files land in ./backups (or BACKUP_HOST_DIR from .env, e.g. a Google Drive folder).
+  # Restore: docker compose run --rm backup restore   (see backups/README.md)
+  backup:
+    image: mongo:7
+    restart: always
+    depends_on:
+      - mongo
+    environment:
+      MONGO_URI: mongodb://mongo:27017
+      DB_NAME: goldhallmark
+      TZ: Asia/Dhaka
+      BACKUP_EVERY_MINUTES: "360"
+      KEEP: "14"
+      KEEP_WEEKLY: "8"
+    volumes:
+      - ${BACKUP_HOST_DIR:-./backups}:/backups
+      - ./scripts:/scripts:ro
+    # tr strips Windows line endings in case the file was checked out with CRLF
+    entrypoint: ["sh", "-c", "tr -d '\\r' < /scripts/backup.sh > /tmp/backup.sh && exec bash /tmp/backup.sh \"$$@\"", "backup"]
+    command: ["loop"]
+
 volumes:
   mongo-data:
