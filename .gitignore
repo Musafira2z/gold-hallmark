@@ -17,3 +17,7 @@ backup/
 # Database dumps (contain customer data - never commit)
 backups/*.gz
 backups/*.archive
+backups/**/*.gz
+backups/backup-log.txt
+backups/.last-order-count
+backups/.tmp-*

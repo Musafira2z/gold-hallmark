@@ -1,51 +1,61 @@
-# Database Backup & Restore Guide
+# Backup ar Restore
 
-## 📦 Automatic Backup
-- Backups run **every hour** automatically
-- Only the **latest backup** is kept (old ones auto-delete)
-- Backup location: `./backups/goldhallmark-YYYYMMDD-HHMM.gz`
+Database er backup **nije nije** hoy. Kichu korte hoy na, shudhu app ta (Docker) chalu thakle hobe.
 
-## 🔄 How to Restore Backup
+## Kibhabe kaj kore
 
-### Method 1: Using the restore script (Easiest)
-```bash
-cd /Users/safi/Desktop/gold-hallmark
-./scripts/restore-backup.sh
+- App chalu thakle proti 6 ghonta por por ekta backup hoy. PC chalu korar sathe sathe o ekta hoy, jodi shesh backup 6 ghontar beshi purono hoy.
+- **Shesh 14 ta** backup thake, ar proti shoptaher ekta copy `weekly/` folder e **8 shoptah** thake.
+- Protita backup er por check kora hoy je file ta thik ache. Kharap hole `.BAD.gz` nam hoy, ar **purono bhalo backup muchha hoy na**.
+- Order er sonkha hotat ordheker niche neme gele backup ta `.CHECK.gz` nam e rakha hoy, ar purono gula muchha hoy na. Emon file dekhle developer ke janan.
+- Shob kaj er hishab: `backup-log.txt`
+
+File er nam: `goldhallmark-20261119-1430.gz` = 19 Nov 2026, dupur 2:30.
+
+## Backup ache kina dekha
+
+`gold-hallmark` folder e Terminal (Mac) ba PowerShell (Windows) khule:
+
 ```
-- It will find the latest backup automatically
-- Asks for confirmation before restoring
-- Deletes existing data and restores from backup
-
-### Method 2: Manual restore
-```bash
-cd /Users/safi/Desktop/gold-hallmark
-docker exec -i mongodb mongorestore \
-  --db goldhallmark \
-  --archive=/backups/goldhallmark-YYYYMMDD-HHMM.gz \
-  --gzip \
-  --drop
-```
-Replace `YYYYMMDD-HHMM` with the actual backup filename.
-
-## ⚠️ Important Notes
-- **Restore will DELETE all current data** - make sure you want to do this!
-- Docker containers must be running before restore
-- The backup file must exist in `./backups/` folder
-
-## 🔍 Check Available Backups
-```bash
-ls -lh /Users/safi/Desktop/gold-hallmark/backups/
+docker compose run --rm backup list
 ```
 
-## 🛠️ Troubleshooting
+## Ekhoni ekta backup neya
 
-### If restore fails:
-1. Make sure Docker is running: `docker ps`
-2. Check if MongoDB container is up: `docker ps | grep mongodb`
-3. Verify backup file exists: `ls -lh backups/`
-
-### Manual backup (if needed):
-```bash
-./scripts/hourly-backup.sh
+```
+docker compose run --rm backup now
 ```
 
+## Restore (purono data ferot ana)
+
+**Sabdhan:** restore korle ekhonkar data muche backup er data boshe. Tai age developer er sathe kotha bolun.
+
+Shobcheye notun backup theke:
+
+```
+docker compose run --rm backup restore
+```
+
+Nirdishto ekta backup theke (nam `list` theke nin):
+
+```
+docker compose run --rm backup restore goldhallmark-20261119-1430.gz
+```
+
+- Restore er age ekhonkar data ar sonkha dekhabe, ar `yes` likhte bolbe.
+- Restore er **age ekhonkar data r ekta safety copy** nibe (`...-before-restore.gz`). Bhul restore holeo oita diye ferot ana jabe.
+- Mac e eta o cholbe: `./scripts/restore-backup.sh`
+
+## PC er baire copy (Google Drive)
+
+Google Drive app PC te thakle, `gold-hallmark` folder e `.env` namer file e ei line ta likhun (path ta apnar Drive folder er):
+
+```
+BACKUP_HOST_DIR=G:/My Drive/gold-hallmark-backups
+```
+
+Tarpor `docker compose up -d`. Ekhon theke backup Drive folder e jabe, Drive nije nije cloud e tule rakhbe.
+
+## Purono script
+
+`scripts/hourly-backup.sh` purono niyom (shudhu shesh copy rakhto). Eta ar lagbe na, `backup` service tar jayga niyeche.
