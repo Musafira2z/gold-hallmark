@@ -21,3 +21,6 @@ backups/**/*.gz
 backups/backup-log.txt
 backups/.last-order-count
 backups/.tmp-*
+
+# Local settings for the shop PC (see .env.example)
+.env
