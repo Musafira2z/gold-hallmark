@@ -1,14 +1,45 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import PropTypes from "prop-types";
 import imageDefault from "../assets/imageDefault.png";
 import axios from "axios";
 import { Bounce, toast, ToastContainer } from "react-toastify";
 import {apiUrl} from "../context/UserContext.jsx";
 import UpdateUserModal from "./UpdateUserModal.jsx";
+import { formatContactForDisplay } from "../utils/formatContact.js";
+
+const PAGE_SIZE = 50;
+const digits = (v) => String(v ?? "").replace(/\D/g, "");
+
+// Match name, ID, phone (with or without the leading 0) or shop name.
+const matches = (c, q) => {
+    const text = q.trim().toLowerCase();
+    if (!text) return true;
+    if (String(c.name || "").toLowerCase().includes(text)) return true;
+    if (String(c.customerID) === text) return true;
+    const companies = Array.isArray(c.company) ? c.company : [c.company];
+    if (companies.some((co) => String(co || "").toLowerCase().includes(text))) return true;
+    const qd = digits(text);
+    // Phone is shown with its leading 0 even when the DB lost it, so "0171..." and "171..." both match.
+    return qd.length >= 3 && digits(formatContactForDisplay(c.contact)).includes(qd);
+};
 
 export function CustomerDetailTable({ customers, onRemoveCustomer }) {
     const [selectedCustomerId, setSelectedCustomerId] = useState(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [search, setSearch] = useState("");
+    const [page, setPage] = useState(1);
+
+    // Newest customers first (an exact ID match goes on top), then search, then 50 per page.
+    const filtered = useMemo(() => {
+        const exactId = (c) => String(c.customerID) === search.trim();
+        return [...customers]
+            .sort((a, b) => exactId(b) - exactId(a) || Number(b.customerID) - Number(a.customerID))
+            .filter((c) => matches(c, search));
+    }, [customers, search]);
+    const pages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+    const currentPage = Math.min(page, pages);
+    const visible = filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
 
     const handleEdit = (id) => {
         setSelectedCustomerId(id);
@@ -54,6 +85,24 @@ export function CustomerDetailTable({ customers, onRemoveCustomer }) {
                 <p className="text-blue-100 text-sm mt-1">{customers.length} customers registered</p>
             </div>
 
+            {/* Search */}
+            <div className="px-6 py-4 border-b border-gray-200 flex flex-wrap items-center gap-3">
+                <input
+                    type="search"
+                    value={search}
+                    onChange={(e) => {
+                        setSearch(e.target.value);
+                        setPage(1);
+                    }}
+                    placeholder="Nam, ID, phone ba dokan diye khujun"
+                    className="flex-1 min-w-[16rem] border border-gray-300 rounded-lg px-4 py-2.5 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    aria-label="Search customers"
+                />
+                {search && (
+                    <span className="text-sm text-gray-600">{filtered.length} jon pawa geche</span>
+                )}
+            </div>
+
             {/* Table */}
             <div className="overflow-x-auto">
                 <table className="w-full">
@@ -71,7 +120,13 @@ export function CustomerDetailTable({ customers, onRemoveCustomer }) {
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100">
-                        {customers.length === 0 ? (
+                        {customers.length > 0 && filtered.length === 0 ? (
+                            <tr>
+                                <td colSpan="3" className="px-6 py-10 text-center text-gray-500">
+                                    &quot;{search}&quot; diye kono customer pawa jay ni
+                                </td>
+                            </tr>
+                        ) : customers.length === 0 ? (
                             <tr>
                                 <td colSpan="3" className="px-6 py-12 text-center">
                                     <div className="flex flex-col items-center justify-center text-gray-400">
@@ -84,7 +139,7 @@ export function CustomerDetailTable({ customers, onRemoveCustomer }) {
                                 </td>
                             </tr>
                         ) : (
-                            customers.map(({ _id, customerID, name, contact, image, address }, index) => {
+                            visible.map(({ _id, customerID, name, contact, image, address }) => {
                                 const normalizedApiUrl = apiUrl?.endsWith("/") ? apiUrl.slice(0, -1) : apiUrl;
                                 const imagePath = typeof image === "string" ? image.trim() : "";
                                 const isAbsoluteUrl = /^https?:\/\//i.test(imagePath);
@@ -111,9 +166,12 @@ export function CustomerDetailTable({ customers, onRemoveCustomer }) {
                                                     </span>
                                                 </div>
                                                 <div>
-                                                    <p className="font-semibold text-gray-800 group-hover:text-blue-700 transition-colors">
+                                                    <Link
+                                                        to={`/customers/${customerID}`}
+                                                        className="font-semibold text-gray-800 hover:text-blue-700 hover:underline transition-colors"
+                                                    >
                                                         {name}
-                                                    </p>
+                                                    </Link>
                                                     <p className="text-xs text-gray-400">Customer ID: {customerID}</p>
                                                     {address && (
                                                         <p className="text-xs text-gray-500 flex items-center gap-1 mt-0.5">
@@ -134,7 +192,7 @@ export function CustomerDetailTable({ customers, onRemoveCustomer }) {
                                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
                                                     </svg>
                                                 </div>
-                                                <span className="font-medium text-gray-700">{contact}</span>
+                                                <span className="font-medium text-gray-700">{formatContactForDisplay(contact)}</span>
                                             </div>
                                         </td>
                                         <td className="px-6 py-4">
@@ -166,7 +224,32 @@ export function CustomerDetailTable({ customers, onRemoveCustomer }) {
                     </tbody>
                 </table>
             </div>
-            
+
+            {/* Paging */}
+            {pages > 1 && (
+                <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between text-sm text-gray-600">
+                    <span>
+                        {(currentPage - 1) * PAGE_SIZE + 1}–{Math.min(currentPage * PAGE_SIZE, filtered.length)} / {filtered.length}
+                    </span>
+                    <div className="flex gap-2">
+                        <button
+                            disabled={currentPage <= 1}
+                            onClick={() => setPage(currentPage - 1)}
+                            className="px-3 py-1.5 rounded-lg border border-gray-300 disabled:opacity-40"
+                        >
+                            ‹ Ager
+                        </button>
+                        <button
+                            disabled={currentPage >= pages}
+                            onClick={() => setPage(currentPage + 1)}
+                            className="px-3 py-1.5 rounded-lg border border-gray-300 disabled:opacity-40"
+                        >
+                            Porer ›
+                        </button>
+                    </div>
+                </div>
+            )}
+
             {/* Update User Modal */}
             {selectedCustomerId && (
                 <UpdateUserModal

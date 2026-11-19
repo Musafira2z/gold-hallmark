@@ -24,6 +24,10 @@ const orderSchema = new mongoose.Schema({
     image: String,
 }, { timestamps: true });
 
+// Indexes only speed up lookups; they do not change any stored data.
+orderSchema.index({ customerID: 1, createdAt: -1 }); // customer profile / history
+orderSchema.index({ createdAt: -1 });                // day summary, newest first
+
 const Order = mongoose.model("Order", orderSchema);
 
 module.exports = Order;
