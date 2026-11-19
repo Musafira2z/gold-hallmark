@@ -7,6 +7,7 @@ const upload = multer({dest: "uploads/"});
 router.get("/", orderController.getOrders);
 router.get("/summary", orderController.getOrderSummary); // before "/:id"
 router.post("/", upload.single("image"), orderController.createOrder);
+router.put("/:id", orderController.updateOrder);
 router.delete("/:id", orderController.deleteOrder);
 router.get("/:id", orderController.getOrderById);
 

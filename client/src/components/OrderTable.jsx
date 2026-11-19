@@ -61,6 +61,9 @@ function OrderTable({ orders, showDate = true, onDelete }) {
                                     <Button to={`/invoice/${order._id}`} target="_blank" rel="noreferrer" variant="secondary" size="sm">
                                         Memo
                                     </Button>
+                                    <Button to={`/orders/${order._id}/edit`} variant="secondary" size="sm" aria-label={`Edit memo ${order.voucher ?? ""}`}>
+                                        Edit
+                                    </Button>
                                     {onDelete && (
                                         <Button variant="danger" size="sm" onClick={() => onDelete(order)} aria-label={`Delete memo ${order.voucher ?? ""}`}>
                                             Delete

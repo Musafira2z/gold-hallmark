@@ -22,6 +22,15 @@ const orderSchema = new mongoose.Schema({
     totalAmount: Number, // Use totalAmount to avoid confusion
     customerFrom: Date,
     image: String,
+    // Order edits (BUGS F1): when it was last edited, and what it looked like before each edit.
+    editedAt: Date,
+    edits: [{
+        _id: false,
+        at: Date,
+        company: String,
+        totalAmount: Number,
+        items: [itemSchema],
+    }],
 }, { timestamps: true });
 
 // Indexes only speed up lookups; they do not change any stored data.

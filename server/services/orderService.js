@@ -26,6 +26,61 @@ const cleanItems = (items) =>
     });
 exports.cleanItems = cleanItems;
 
+const round2 = (n) => Math.round(n * 100) / 100;
+const ITEM_TEXT_FIELDS = ["item", "weightUnite", "xray"];
+
+// Check and clean items for an edit. Returns { items, total } or { error }.
+// Amounts are worked out here; amounts sent by the browser are not trusted.
+const prepareEditedItems = (rawItems) => {
+    if (!Array.isArray(rawItems) || rawItems.length === 0) return { error: "Add at least one item." };
+    if (rawItems.length > 200) return { error: "Too many items." };
+    const items = [];
+    for (let i = 0; i < rawItems.length; i += 1) {
+        const raw = rawItems[i] || {};
+        const [clean] = cleanItems([raw]);
+        const out = {};
+        ITEM_TEXT_FIELDS.forEach((f) => {
+            out[f] = typeof raw[f] === "string" ? raw[f].trim().slice(0, 200) : "";
+        });
+        const label = `Item ${i + 1}${out.item ? ` (${out.item})` : ""}`;
+        if (!out.item) return { error: `${label}: choose the item name.` };
+        if (clean.quantity === null || clean.quantity <= 0) return { error: `${label}: enter Quantity.` };
+        if (clean.rate === null || clean.rate < 0) return { error: `${label}: enter Rate.` };
+        out.weightUnite = out.weightUnite || "gm";
+        items.push({
+            ...out,
+            quantity: clean.quantity,
+            rate: clean.rate,
+            weight: clean.weight,
+            amount: round2(clean.quantity * clean.rate),
+        });
+    }
+    return { items, total: round2(items.reduce((sum, it) => sum + it.amount, 0)) };
+};
+
+// Edit an order's items and shop. Customer, memo number, date and type never change.
+// The version before the edit is kept in `edits`.
+// Returns the updated order, null if not found, or { error } for bad input.
+exports.updateOrder = async (id, { items, company }) => {
+    const order = await Order.findById(id);
+    if (!order) return null;
+    const prepared = prepareEditedItems(items);
+    if (prepared.error) return { error: prepared.error };
+    if (company !== undefined && typeof company !== "string") return { error: "Invalid shop." };
+
+    order.edits.push({
+        at: new Date(),
+        company: order.company,
+        totalAmount: order.totalAmount,
+        items: order.items.map((it) => it.toObject()),
+    });
+    order.items = prepared.items;
+    order.totalAmount = prepared.total;
+    if (company !== undefined) order.company = company.trim();
+    order.editedAt = new Date();
+    return order.save();
+};
+
 const isDuplicateVoucher = (error) => error && error.code === 11000 && /voucher/.test(error.message || "");
 
 exports.createOrder = async (orderData, items, file) => { // Add items parameter

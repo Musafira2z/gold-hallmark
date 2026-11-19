@@ -8,6 +8,7 @@ import XRay from "../pages/Xray";
 import Hallmark from "../pages/Hallmark";
 import Invoice from "../pages/Invoice";
 import CustomerProfile from "../pages/CustomerProfile";
+import EditOrder from "../pages/EditOrder";
 
 const router = createBrowserRouter([
     {
@@ -18,6 +19,7 @@ const router = createBrowserRouter([
             { path: "/customers", element: <Customers /> },
             { path: "/customers/:customerID", element: <CustomerProfile /> },
             { path: "/orders", element: <Orders /> },
+            { path: "/orders/:id/edit", element: <EditOrder /> },
             { path: "/hallmark", element: <Hallmark /> },
             { path: "/xray", element: <XRay /> },
             { path: "/updateuser/:id", element: <UpdateUser /> },

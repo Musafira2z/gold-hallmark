@@ -170,6 +170,9 @@ const Invoice = () => {
                         <p className="text-sm font-bold">
                             <span className="text-sm font-normal">Paid Amount:</span> {order.totalAmount} BDT
                         </p>
+                        {order.editedAt && (
+                            <p className="text-xs text-gray-600">Edited {memoDate(order.editedAt)}</p>
+                        )}
                     </div>
                 </div>
 

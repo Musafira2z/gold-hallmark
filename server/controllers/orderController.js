@@ -95,6 +95,20 @@ exports.getOrderById = async (req, res) => {
     }
 };
 
+exports.updateOrder = async (req, res) => {
+    try {
+        const { items, company } = req.body || {};
+        const result = await OrderService.updateOrder(req.params.id, { items, company });
+        if (!result) return res.status(404).json({ message: "Order not found" });
+        if (result.error) return res.status(400).json({ error: result.error });
+        res.json(result);
+    } catch (error) {
+        if (error.name === "CastError") return res.status(404).json({ message: "Order not found" });
+        console.error("Error updating order:", error);
+        res.status(500).json({ error: "Failed to update order" });
+    }
+};
+
 exports.deleteOrder = async (req, res) => {
     try {
         const deletedOrder = await OrderService.deleteOrder(req.params.id);
