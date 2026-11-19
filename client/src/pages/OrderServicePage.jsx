@@ -10,6 +10,69 @@ import { FaCamera } from "react-icons/fa";
 import { apiUrl, UserContext } from "../context/UserContext.jsx";
 import useItemNames from "../hooks/useItemNames.js";
 import { formatContactForDisplay } from "../utils/formatContact.js";
+import { companyText } from "../utils/customerSearch.js";
+
+const MAX_CUSTOMER_OPTIONS = 50;
+
+// Customer box: one search for ID, phone, name or shop.
+// Order: exact ID, ID starting with it, phone, name starting with it, name/shop containing it.
+const rankCustomers = (customers, input) => {
+    const text = (input || "").trim().toLowerCase();
+    const newestFirst = (a, b) => Number(b.customerID) - Number(a.customerID);
+    if (!text) return [...customers].sort(newestFirst).slice(0, MAX_CUSTOMER_OPTIONS);
+    const digits = text.replace(/\D/g, "");
+    const isPhoneLike = /^[\d\s+-]+$/.test(text); // only digits (and spaces/dashes) count as a phone search
+    const scored = [];
+    customers.forEach((c) => {
+        const id = String(c.customerID);
+        const name = String(c.name || "").toLowerCase();
+        const shops = companyText(c.company).toLowerCase();
+        const phone = formatContactForDisplay(c.contact).replace(/\D/g, "");
+        let score = -1;
+        if (id === text) score = 0;
+        else if (digits === text && id.startsWith(text)) score = 1;
+        else if (isPhoneLike && digits.length >= 3 && phone.includes(digits)) score = 2;
+        else if (name.startsWith(text)) score = 3;
+        else if (name.includes(text) || shops.includes(text)) score = 4;
+        if (score >= 0) scored.push({ c, score });
+    });
+    scored.sort((a, b) => a.score - b.score || newestFirst(a.c, b.c));
+    return scored.slice(0, MAX_CUSTOMER_OPTIONS).map((s) => s.c);
+};
+
+const customerLabel = (c) =>
+    [c.customerID, c.name, companyText(c.company), formatContactForDisplay(c.contact)].filter(Boolean).join(" · ");
+
+// Item box: exact name first, then names starting with the text, then the rest.
+const rankItems = (options, input) => {
+    const text = (input || "").trim().toLowerCase();
+    if (!text) return options;
+    const clean = (s) => s.toLowerCase().replace(/^[^a-z0-9]+/, "");
+    const scored = [];
+    options.forEach((o) => {
+        const label = String(o.label).toLowerCase();
+        let score = -1;
+        if (label === text || clean(label) === text) score = 0;
+        else if (label.startsWith(text) || clean(label).startsWith(text)) score = 1;
+        else if (label.includes(text)) score = 2;
+        if (score >= 0) scored.push({ o, score });
+    });
+    scored.sort((a, b) => a.score - b.score || a.o.label.length - b.o.label.length || a.o.label.localeCompare(b.o.label));
+    return scored.map((s) => s.o);
+};
+
+// A typed number ("2", "2.5") is a quantity, never a new item name (U4 / D10).
+const isNumberLike = (text) => /^\s*\d+([.,]\d+)?\s*$/.test(text || "");
+
+// Field order for Enter. The last one adds the item.
+const FIELD_ORDER = ["quantity", "rate", "weight", "weightUnit", "xray"];
+const focusField = (index, field) => {
+    const el = document.querySelector(`[data-field="${index}-${field}"]`);
+    if (el) {
+        el.focus();
+        if (typeof el.select === "function" && el.tagName === "INPUT") el.select();
+    }
+};
 
 // Fields start empty. (They used to start with the words "Quantity", "Rate",
 // "Weight" as real values; an untouched Weight was sent as "Weight" and the
@@ -78,14 +141,22 @@ const OrderServicePage = ({
     noteLabel,
     retainItemNameOnAdd = false,
 }) => {
-    const { customers } = useContext(UserContext);
+    const { customers, loading: customersLoading } = useContext(UserContext);
     const [searchParams] = useSearchParams();
     const prefillCustomerID = searchParams.get("customer");
     const prefillDone = useRef(false);
     const { itemOptions, loading: itemLoading, createItem } = useItemNames(serviceType);
 
+    const formRef = useRef(null);
+    const customerSelectRef = useRef(null);
+    const itemSelectRefs = useRef({});
+    const customerMenuOpen = useRef(false);
+    const itemMenuOpen = useRef(false);
+
     const [totalAmount, setTotalAmount] = useState(0);
-    const [searchByType, setSearchByType] = useState("id"); // "id" | "phone"
+    const [customerInput, setCustomerInput] = useState("");
+    const [itemInput, setItemInput] = useState("");
+    const [saving, setSaving] = useState(false);
     const [selectedCustomerId, setSelectedCustomerId] = useState("");
     const [selectedCompany, setSelectedCompany] = useState("");
     const [items, setItems] = useState([createItemState("")]);
@@ -96,18 +167,24 @@ const OrderServicePage = ({
     const [capturedImage, setCapturedImage] = useState(null);
     const [imageName, setImageName] = useState("");
 
-    const idOptions = useMemo(() =>
-        customers.map((c) => ({ value: c.customerID, label: String(c.customerID) })),
-        [customers]
+    const customerOptions = useMemo(
+        () => rankCustomers(customers, customerInput).map((c) => ({ value: c.customerID, label: customerLabel(c) })),
+        [customers, customerInput]
     );
-    const phoneOptions = useMemo(() =>
-        customers.map((c) => ({
-            value: c.customerID,
-            label: formatContactForDisplay(c.contact),
-        })),
-        [customers]
+    const selectedCustomerOption = useMemo(() => {
+        const c = customers.find((x) => x.customerID === selectedCustomerId);
+        return c ? { value: c.customerID, label: customerLabel(c) } : null;
+    }, [customers, selectedCustomerId]);
+    // Old mistakes saved item names like "2" or "220" (BUGS D10). Hide them here so
+    // a typed quantity can't pick one; the database itself is not touched.
+    const rankedItemOptions = useMemo(
+        () => rankItems(itemOptions.filter((o) => !isNumberLike(o.label)), itemInput),
+        [itemOptions, itemInput]
     );
-    const customerOptions = searchByType === "id" ? idOptions : phoneOptions;
+
+    const focusItemName = (index = 0) => {
+        itemSelectRefs.current[index]?.focus();
+    };
 
     const calculateTotal = (pendingItems = []) =>
         pendingItems.reduce((sum, item) => sum + parseFloat(item.amount || 0), 0);
@@ -135,54 +212,54 @@ const OrderServicePage = ({
         });
     };
 
+    const handleItemSelected = (index, value) => {
+        handleItemChange(index, "item", value);
+        setItemInput("");
+        // Focus right away (not after a delay), so fast typing lands in Quantity.
+        if (value) focusField(index, "quantity");
+    };
+
     const handleCreateItemOption = async (index, inputValue) => {
+        if (isNumberLike(inputValue)) return; // a number is a quantity, not an item name
         const newOption = await createItem(inputValue);
         if (newOption) {
-            handleItemChange(index, "item", newOption.value);
+            handleItemSelected(index, newOption.value);
         }
     };
 
+    // Enter moves to the next box; Enter in the last box adds the item.
     const handleKeyPress = (index, field, event) => {
-        if (event.key !== "Enter") return;
+        if (event.key !== "Enter" || event.ctrlKey || event.metaKey) return;
         event.preventDefault();
-
-        const fieldOrder = ["quantity", "rate", "weight", "weightUnit", "xray"];
-        const currentFieldIndex = fieldOrder.indexOf(field);
-
-        if (currentFieldIndex < fieldOrder.length - 1) {
-            const nextField = fieldOrder[currentFieldIndex + 1];
-            
-            setTimeout(() => {
-                if (nextField === "weightUnit") {
-                    // Focus on weight unit dropdown
-                    const nextSelect = document.querySelector(`select[data-field="${index}-${nextField}"]`);
-                    if (nextSelect) {
-                        nextSelect.focus();
-                        nextSelect.click(); // Open dropdown
-                    }
-                } else {
-                    // Focus on regular input field
-                    const nextInput = document.querySelector(`input[data-field="${index}-${nextField}"]`);
-                    if (nextInput) {
-                        nextInput.focus();
-                        nextInput.select(); // Select all text for easy replacement
-                    }
-                }
-            }, 50);
+        const next = FIELD_ORDER[FIELD_ORDER.indexOf(field) + 1];
+        if (next) {
+            focusField(index, next);
             return;
         }
+        tryAddItem();
+    };
 
-        // If we're at the last field (xray), add item if all required fields are filled
-        const currentItem = items[index];
-        if (currentItem.item && currentItem.quantity && currentItem.rate) {
-            addItem();
-            setTimeout(() => {
-                const nextItemInput = document.querySelector(`input[data-field="${index + 1}-quantity"]`);
-                if (nextItemInput) {
-                    nextItemInput.focus();
-                }
-            }, 150);
+    // Which box to send the cursor to for an item problem.
+    const fieldForProblem = (item) => {
+        if (!String(item.item || "").trim()) return "item";
+        if (toNumberOrNull(item.quantity) === null || toNumberOrNull(item.quantity) <= 0) return "quantity";
+        return "rate";
+    };
+
+    const tryAddItem = () => {
+        const current = items[0];
+        const problem = itemProblem(current, flattenItems(addedItems).length + 1);
+        if (problem) {
+            toast.warn(problem);
+            const field = fieldForProblem(current);
+            if (field === "item") focusItemName(0);
+            else focusField(0, field);
+            return;
         }
+        addItem();
+        // Hallmark keeps the item name for the next item, so go straight to Quantity.
+        if (retainItemNameOnAdd && current.item) focusField(0, "quantity");
+        else focusItemName(0);
     };
 
     const addItem = () => {
@@ -236,30 +313,8 @@ const OrderServicePage = ({
         }));
     };
 
-    const filterOption = (option, inputValue) => {
-        if (!inputValue?.trim()) return true;
-        const inputDigits = inputValue.trim().replace(/\D/g, "");
-        if (inputDigits.length === 0) return true;
-        const labelStr = String(option.label ?? "").replace(/\D/g, "");
-        return labelStr.startsWith(inputDigits) || labelStr.includes(inputDigits);
-    };
-
-    const handleSearchByTypeChange = (e) => {
-        const newType = e.target.value;
-        setSearchByType(newType);
-        setSelectedCustomerId("");
-        setSelectedCompany("");
-        setFormData((prev) => ({
-            ...prev,
-            customerID: "",
-            name: "",
-            company: "",
-            contact: "",
-            address: "",
-        }));
-    };
-
     const handleCustomerSelect = (selectedOption) => {
+        setCustomerInput("");
         if (!selectedOption) {
             setSelectedCustomerId("");
             setSelectedCompany("");
@@ -289,6 +344,7 @@ const OrderServicePage = ({
                 contact: selectedCustomer.contact,
                 address: selectedCustomer.address,
             }));
+            focusItemName(0);
         }
     };
 
@@ -300,6 +356,12 @@ const OrderServicePage = ({
         if (match) handleCustomerSelect({ value: match.customerID });
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [prefillCustomerID, customers]);
+
+    // Page opened without a customer: put the cursor in the customer box
+    // as soon as the customer list has loaded (the box is disabled until then).
+    useEffect(() => {
+        if (!customersLoading && !prefillCustomerID) customerSelectRef.current?.focus();
+    }, [customersLoading, prefillCustomerID]);
 
     const handleCompanyChange = (event) => {
         setSelectedCompany(event.target.value);
@@ -313,6 +375,14 @@ const OrderServicePage = ({
 
     const handleSubmit = async (event) => {
         event.preventDefault();
+        if (saving) return; // a second click while saving must not make a second order
+
+        if (!formData.customerID) {
+            toast.warn("Choose the customer first.");
+            setTimeout(() => customerSelectRef.current?.focus(), 0);
+            return;
+        }
+
         const allItems = [...addedItems];
 
         if (items[0].item && items[0].quantity && items[0].rate) {
@@ -320,7 +390,8 @@ const OrderServicePage = ({
         }
 
         if (allItems.length === 0 || flattenItems(allItems).length === 0) {
-            alert("Please add at least one product/item before submitting.");
+            toast.warn("Add at least one item first.");
+            focusItemName(0);
             return;
         }
 
@@ -328,9 +399,11 @@ const OrderServicePage = ({
             .map((item, i) => itemProblem(item, i + 1))
             .find(Boolean);
         if (problem) {
-            alert(problem);
+            toast.warn(problem);
             return;
         }
+
+        setSaving(true);
 
         const calculatedTotalAmount = totalAmount;
         const payload = new FormData();
@@ -361,9 +434,13 @@ const OrderServicePage = ({
             if (!newTab) {
                 alert("Failed to open new tab. Please allow popups for this site.");
             }
+            toast.success("Order saved.");
+            focusItemName(0);
         } catch (error) {
             console.error("Error uploading data:", error);
             toast.error("Order was NOT saved. Please try again.");
+        } finally {
+            setSaving(false);
         }
     };
 
@@ -408,28 +485,34 @@ const OrderServicePage = ({
         closeCamera();
     };
 
-    const preventCustomerEnterSubmit = (event) => {
+    // Ctrl+Enter (or Cmd+Enter) anywhere = Submit & Print.
+    // A plain Enter never submits the form by itself; each box decides what Enter does.
+    const handleFormKeyDown = (event) => {
         if (event.key !== "Enter") return;
-
-        const allItems = [...addedItems];
-        if (items[0].item && items[0].quantity && items[0].rate) {
-            allItems.push(items);
-        }
-
-        if (allItems.length === 0 || flattenItems(allItems).length === 0) {
+        if (event.ctrlKey || event.metaKey) {
             event.preventDefault();
+            formRef.current?.requestSubmit();
             return;
         }
-
-        const target = event.target;
-        if (
-            target.id === "customerID" ||
-            target.id === "name" ||
-            target.id === "company" ||
-            target.closest(".css-1pahdxg-control") ||
-            target.closest(".css-1hwfws3")
-        ) {
+        if (event.target.type !== "submit" && event.target.tagName !== "BUTTON") {
             event.preventDefault();
+        }
+    };
+
+    // Enter on the customer box after a customer is chosen: go to the item.
+    const handleCustomerKeyDown = (event) => {
+        if (event.key === "Enter" && !event.ctrlKey && !event.metaKey && !customerMenuOpen.current && selectedCustomerId) {
+            event.preventDefault();
+            focusItemName(0);
+        }
+    };
+
+    // Enter on the item box after an item is chosen: go to Quantity.
+    const handleItemKeyDown = (index, event) => {
+        if (event.key !== "Enter" || event.ctrlKey || event.metaKey) return;
+        if (!itemMenuOpen.current && items[index]?.item) {
+            event.preventDefault();
+            focusField(index, "quantity");
         }
     };
 
@@ -445,39 +528,42 @@ const OrderServicePage = ({
                         {heading}
                     </h1>
                     <p className="text-gray-500">{description}</p>
+                    <p className="mt-2 text-xs text-gray-500" aria-label="Keyboard shortcuts">
+                        <kbd className="rounded border border-gray-300 bg-gray-50 px-1">Enter</kbd> next box ·{" "}
+                        <kbd className="rounded border border-gray-300 bg-gray-50 px-1">Enter</kbd> in the last box adds the item ·{" "}
+                        <kbd className="rounded border border-gray-300 bg-gray-50 px-1">Ctrl</kbd>+
+                        <kbd className="rounded border border-gray-300 bg-gray-50 px-1">Enter</kbd> Submit &amp; Print
+                    </p>
                 </div>
-                <form onSubmit={handleSubmit} onKeyDown={preventCustomerEnterSubmit}>
+                <form ref={formRef} onSubmit={handleSubmit} onKeyDown={handleFormKeyDown}>
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                         <div className="card-modern bg-gradient-to-br from-gray-50 to-white">
                             <div className="space-y-5">
                                 <div>
-                                    <label htmlFor="searchByType" className="block text-sm font-semibold text-gray-700 mb-2">
-                                        Choose ID or Phone
-                                    </label>
-                                    <select
-                                        id="searchByType"
-                                        className="input-modern mb-4"
-                                        value={searchByType}
-                                        onChange={handleSearchByTypeChange}
-                                    >
-                                        <option value="id">Customer ID</option>
-                                        <option value="phone">Phone Number</option>
-                                    </select>
-                                </div>
-                                <div>
                                     <label htmlFor="customerID" className="block text-sm font-semibold text-gray-700 mb-2">
-                                        {searchByType === "id" ? "Select Customer ID" : "Select Phone Number"}
+                                        Customer
                                     </label>
                                     <Select
-                                        id="customerID"
+                                        ref={customerSelectRef}
+                                        inputId="customerID"
                                         options={customerOptions}
-                                        value={customerOptions.find((option) => option.value === selectedCustomerId) || null}
+                                        value={selectedCustomerOption}
                                         onChange={handleCustomerSelect}
-                                        filterOption={filterOption}
+                                        inputValue={customerInput}
+                                        onInputChange={(value, meta) => {
+                                            if (meta.action === "input-change") setCustomerInput(value);
+                                            if (meta.action === "menu-close") setCustomerInput("");
+                                        }}
+                                        filterOption={() => true}
+                                        onMenuOpen={() => { customerMenuOpen.current = true; }}
+                                        onMenuClose={() => { customerMenuOpen.current = false; }}
+                                        onKeyDown={handleCustomerKeyDown}
                                         isClearable
                                         isSearchable
-                                        placeholder={searchByType === "id" ? "Search or select ID..." : "Search or select phone..."}
-                                        onKeyDown={(event) => event.key === "Enter" && event.preventDefault()}
+                                        isLoading={customersLoading}
+                                        isDisabled={customersLoading}
+                                        placeholder={customersLoading ? "Loading customers…" : "Type ID, phone, name or shop, then Enter"}
+                                        noOptionsMessage={() => (customerInput ? `No customer matches "${customerInput}"` : "No customers")}
                                     />
                                 </div>
                                 <div>
@@ -517,16 +603,34 @@ const OrderServicePage = ({
                                         <div>
                                             <label className="block text-sm font-semibold text-gray-700 mb-2">Item Name</label>
                                             <CreatableSelect
-                                                id={`${serviceType}-item-${index}`}
+                                                ref={(el) => { itemSelectRefs.current[index] = el; }}
+                                                inputId={`${serviceType}-item-${index}`}
                                                 className="w-full border-b border-gray-300 p-2"
                                                 value={item.item ? { value: item.item, label: item.item } : null}
-                                                options={itemOptions}
+                                                options={rankedItemOptions}
+                                                inputValue={itemInput}
+                                                onInputChange={(value, meta) => {
+                                                    if (meta.action === "input-change") setItemInput(value);
+                                                    if (meta.action === "menu-close") setItemInput("");
+                                                }}
+                                                filterOption={() => true}
+                                                onMenuOpen={() => { itemMenuOpen.current = true; }}
+                                                onMenuClose={() => { itemMenuOpen.current = false; }}
+                                                onKeyDown={(event) => handleItemKeyDown(index, event)}
                                                 isClearable
                                                 isLoading={itemLoading}
-                                                onChange={(selectedOption) => handleItemChange(index, "item", selectedOption?.value || "")}
+                                                onChange={(selectedOption) => handleItemSelected(index, selectedOption?.value || "")}
                                                 onCreateOption={(inputValue) => handleCreateItemOption(index, inputValue)}
-                                                placeholder="Select or add item..."
-                                                formatCreateLabel={(inputValue) => `Add "${inputValue}"`}
+                                                isValidNewOption={(inputValue, _value, options) =>
+                                                    Boolean(inputValue.trim()) &&
+                                                    !isNumberLike(inputValue) &&
+                                                    !options.some((o) => String(o.label).toLowerCase() === inputValue.trim().toLowerCase())
+                                                }
+                                                placeholder="Type item name, then Enter"
+                                                formatCreateLabel={(inputValue) => `Add new item "${inputValue}"`}
+                                                noOptionsMessage={() =>
+                                                    isNumberLike(itemInput) ? "A number is a quantity, not an item name" : "No items"
+                                                }
                                             />
                                         </div>
                                         <div className="flex gap-x-5">
@@ -638,7 +742,7 @@ const OrderServicePage = ({
                                         </div>
                                     </div>
                                 ))}
-                                <button type="button" className="btn-primary w-full" onClick={addItem}>
+                                <button type="button" className="btn-primary w-full" onClick={tryAddItem}>
                                     Add Item
                                 </button>
                             </div>
@@ -735,9 +839,10 @@ const OrderServicePage = ({
                                 </div>
                             </div>
                             <div>
-                                <button type="submit" className="btn-primary w-full lg:w-auto">
-                                    Submit &amp; Print
+                                <button type="submit" className="btn-primary w-full lg:w-auto" disabled={saving}>
+                                    {saving ? "Saving…" : "Submit & Print"}
                                 </button>
+                                <span className="ml-3 text-xs text-gray-500">or Ctrl+Enter</span>
                             </div>
                         </div>
                     </div>
