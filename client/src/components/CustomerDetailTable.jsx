@@ -3,40 +3,21 @@ import { Link } from "react-router-dom";
 import PropTypes from "prop-types";
 import imageDefault from "../assets/imageDefault.png";
 import axios from "axios";
-import { Bounce, toast, ToastContainer } from "react-toastify";
+import { Bounce, toast } from "react-toastify";
 import {apiUrl} from "../context/UserContext.jsx";
 import UpdateUserModal from "./UpdateUserModal.jsx";
 import { formatContactForDisplay } from "../utils/formatContact.js";
+import { searchCustomers } from "../utils/customerSearch.js";
 
 const PAGE_SIZE = 50;
-const digits = (v) => String(v ?? "").replace(/\D/g, "");
-
-// Match name, ID, phone (with or without the leading 0) or shop name.
-const matches = (c, q) => {
-    const text = q.trim().toLowerCase();
-    if (!text) return true;
-    if (String(c.name || "").toLowerCase().includes(text)) return true;
-    if (String(c.customerID) === text) return true;
-    const companies = Array.isArray(c.company) ? c.company : [c.company];
-    if (companies.some((co) => String(co || "").toLowerCase().includes(text))) return true;
-    const qd = digits(text);
-    // Phone is shown with its leading 0 even when the DB lost it, so "0171..." and "171..." both match.
-    return qd.length >= 3 && digits(formatContactForDisplay(c.contact)).includes(qd);
-};
-
 export function CustomerDetailTable({ customers, onRemoveCustomer }) {
     const [selectedCustomerId, setSelectedCustomerId] = useState(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [search, setSearch] = useState("");
     const [page, setPage] = useState(1);
 
-    // Newest customers first (an exact ID match goes on top), then search, then 50 per page.
-    const filtered = useMemo(() => {
-        const exactId = (c) => String(c.customerID) === search.trim();
-        return [...customers]
-            .sort((a, b) => exactId(b) - exactId(a) || Number(b.customerID) - Number(a.customerID))
-            .filter((c) => matches(c, search));
-    }, [customers, search]);
+    // Newest customers first (an exact ID match goes on top), then 50 per page.
+    const filtered = useMemo(() => searchCustomers(customers, search), [customers, search]);
     const pages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
     const currentPage = Math.min(page, pages);
     const visible = filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
@@ -52,6 +33,9 @@ export function CustomerDetailTable({ customers, onRemoveCustomer }) {
     };
 
     const handleDelete = async (id) => {
+        const customer = customers.find((c) => c._id === id);
+        const label = customer ? `#${customer.customerID} ${customer.name}` : "this customer";
+        if (!window.confirm(`Delete customer ${label}?\n\nThis cannot be undone. Their old orders stay.`)) return;
         try {
             const response = await axios.delete(`${apiUrl}/users/delete/${id}`);
             toast('Delete Successful', {
@@ -73,16 +57,10 @@ export function CustomerDetailTable({ customers, onRemoveCustomer }) {
     };
 
     return (
-        <div className="w-full bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
+        <div className="w-full bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
             {/* Header */}
-            <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-4">
-                <h3 className="text-xl font-bold text-white flex items-center gap-2">
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                    </svg>
-                    Customer List
-                </h3>
-                <p className="text-blue-100 text-sm mt-1">{customers.length} customers registered</p>
+            <div className="px-6 py-3 border-b border-gray-100">
+                <h2 className="font-semibold text-gray-900">Customer list</h2>
             </div>
 
             {/* Search */}
@@ -94,12 +72,12 @@ export function CustomerDetailTable({ customers, onRemoveCustomer }) {
                         setSearch(e.target.value);
                         setPage(1);
                     }}
-                    placeholder="Nam, ID, phone ba dokan diye khujun"
+                    placeholder="Search by name, ID, phone or shop"
                     className="flex-1 min-w-[16rem] border border-gray-300 rounded-lg px-4 py-2.5 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     aria-label="Search customers"
                 />
                 {search && (
-                    <span className="text-sm text-gray-600">{filtered.length} jon pawa geche</span>
+                    <span className="text-sm text-gray-600">{filtered.length} found</span>
                 )}
             </div>
 
@@ -123,7 +101,7 @@ export function CustomerDetailTable({ customers, onRemoveCustomer }) {
                         {customers.length > 0 && filtered.length === 0 ? (
                             <tr>
                                 <td colSpan="3" className="px-6 py-10 text-center text-gray-500">
-                                    &quot;{search}&quot; diye kono customer pawa jay ni
+                                    No customer matches &quot;{search}&quot;
                                 </td>
                             </tr>
                         ) : customers.length === 0 ? (
@@ -237,14 +215,14 @@ export function CustomerDetailTable({ customers, onRemoveCustomer }) {
                             onClick={() => setPage(currentPage - 1)}
                             className="px-3 py-1.5 rounded-lg border border-gray-300 disabled:opacity-40"
                         >
-                            ‹ Ager
+                            ← Previous
                         </button>
                         <button
                             disabled={currentPage >= pages}
                             onClick={() => setPage(currentPage + 1)}
                             className="px-3 py-1.5 rounded-lg border border-gray-300 disabled:opacity-40"
                         >
-                            Porer ›
+                            Next →
                         </button>
                     </div>
                 </div>
@@ -259,7 +237,6 @@ export function CustomerDetailTable({ customers, onRemoveCustomer }) {
                 />
             )}
             
-            <ToastContainer />
         </div>
     );
 }

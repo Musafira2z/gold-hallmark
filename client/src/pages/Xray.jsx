@@ -4,8 +4,8 @@ import OrderServicePage from "./OrderServicePage.jsx";
 const Xray = () => (
     <OrderServicePage
         serviceType="xray"
-        heading="X-Ray Service"
-        description="Create and manage X-Ray orders"
+        heading="New X-ray order"
+        description="Pick the customer, add items, then Submit & Print."
         noteLabel="Xray"
     />
 );

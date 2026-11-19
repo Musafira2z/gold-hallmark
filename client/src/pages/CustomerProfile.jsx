@@ -33,10 +33,10 @@ const daysAgo = (d) => {
 };
 const lastVisitText = (d) => {
     const n = daysAgo(d);
-    if (n === null) return "Ekhono kono order nai";
-    if (n === 0) return "Shesh eshechhen: aaj";
-    if (n === 1) return "Shesh eshechhen: gotokal";
-    return `Shesh eshechhen: ${n} din age`;
+    if (n === null) return "No orders yet";
+    if (n === 0) return "Last visit: today";
+    if (n === 1) return "Last visit: yesterday";
+    return `Last visit: ${n} days ago`;
 };
 
 const imageUrl = (image) => {
@@ -132,7 +132,7 @@ const CustomerProfile = () => {
     if (profileError === "notfound") {
         return (
             <div className="bg-white rounded-xl border border-gray-200 p-8 text-center">
-                <p className="text-lg font-semibold text-gray-800">Customer #{customerID} pawa jay ni</p>
+                <p className="text-lg font-semibold text-gray-800">Customer #{customerID} not found</p>
                 <Link to="/add-customer" className="text-blue-700 hover:underline mt-2 inline-block">
                     Customer list e ferot jan
                 </Link>
@@ -143,7 +143,7 @@ const CustomerProfile = () => {
         return (
             <div className="bg-white rounded-xl border border-red-200 p-8 text-center text-red-700">
                 Profile load hoy ni. Server chalu ache kina dekhun.{" "}
-                <button onClick={loadProfile} className="underline">Abar chesta korun</button>
+                <button onClick={loadProfile} className="underline">Try again</button>
             </div>
         );
     }
@@ -221,19 +221,19 @@ const CustomerProfile = () => {
             {/* Numbers */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <StatBox
-                    label={`Ei mash (${monthShort(stats.thisMonth.month)})`}
+                    label={`This month (${monthShort(stats.thisMonth.month)})`}
                     amount={stats.thisMonth.amount}
-                    sub={`${stats.thisMonth.orders} order · ${stats.thisMonth.pieces} piece`}
+                    sub={`${stats.thisMonth.orders} orders · ${stats.thisMonth.pieces} pcs`}
                 />
                 <StatBox
-                    label={`Gata mash (${monthShort(stats.lastMonth.month)})`}
+                    label={`Last month (${monthShort(stats.lastMonth.month)})`}
                     amount={stats.lastMonth.amount}
-                    sub={`${stats.lastMonth.orders} order · ${stats.lastMonth.pieces} piece`}
+                    sub={`${stats.lastMonth.orders} orders · ${stats.lastMonth.pieces} pcs`}
                 />
                 <StatBox
-                    label="Shob shomoy"
+                    label="All time"
                     amount={stats.lifetime.amount}
-                    sub={`${stats.lifetime.orders} order${since ? ` · ${monthName(new Date(since).toISOString().slice(0, 7), "short")} theke` : ""}`}
+                    sub={`${stats.lifetime.orders} orders${since ? ` · since ${monthName(new Date(since).toISOString().slice(0, 7), "short")}` : ""}`}
                 />
             </div>
 
@@ -241,15 +241,15 @@ const CustomerProfile = () => {
                 {/* Order history */}
                 <div className="xl:col-span-2 bg-white rounded-xl border border-gray-200">
                     <div className="p-4 border-b border-gray-200 flex flex-wrap items-end gap-3">
-                        <h2 className="text-lg font-bold text-gray-900 mr-auto">Order itihash</h2>
+                        <h2 className="text-lg font-bold text-gray-900 mr-auto">Order history</h2>
                         <label className="text-sm text-gray-600">
-                            Mash
+                            Month
                             <select
                                 value={month}
                                 onChange={changeFilter(setMonth)}
                                 className="ml-2 border border-gray-300 rounded-lg px-2 py-1.5 text-gray-900"
                             >
-                                <option value="">Shob mash</option>
+                                <option value="">All months</option>
                                 {stats.months.map((m) => (
                                     <option key={m.month} value={m.month}>
                                         {monthName(m.month)} ({m.orders})
@@ -259,13 +259,13 @@ const CustomerProfile = () => {
                         </label>
                         {companies.length > 1 && (
                             <label className="text-sm text-gray-600">
-                                Dokan
+                                Shop
                                 <select
                                     value={company}
                                     onChange={changeFilter(setCompany)}
                                     className="ml-2 border border-gray-300 rounded-lg px-2 py-1.5 text-gray-900 max-w-[14rem]"
                                 >
-                                    <option value="">Shob dokan ({companies.length})</option>
+                                    <option value="">All shops ({companies.length})</option>
                                     {companies.map((c) => (
                                         <option key={c.name} value={c.name}>
                                             {c.name}
@@ -280,9 +280,9 @@ const CustomerProfile = () => {
                         <table className="w-full text-sm">
                             <thead>
                                 <tr className="bg-gray-50 text-left text-xs font-semibold text-gray-600 uppercase">
-                                    <th className="px-4 py-3">Tarikh</th>
-                                    <th className="px-4 py-3">Voucher</th>
-                                    <th className="px-4 py-3">Dokan</th>
+                                    <th className="px-4 py-3">Date</th>
+                                    <th className="px-4 py-3">Memo</th>
+                                    <th className="px-4 py-3">Shop</th>
                                     <th className="px-4 py-3">Item</th>
                                     <th className="px-4 py-3">Type</th>
                                     <th className="px-4 py-3 text-right">Taka</th>
@@ -295,7 +295,7 @@ const CustomerProfile = () => {
                                 ) : orders.error ? (
                                     <tr><td colSpan="7" className="px-4 py-8 text-center text-red-700">Order load hoy ni</td></tr>
                                 ) : orders.orders.length === 0 ? (
-                                    <tr><td colSpan="7" className="px-4 py-8 text-center text-gray-500">Kono order nai</td></tr>
+                                    <tr><td colSpan="7" className="px-4 py-8 text-center text-gray-500">No orders</td></tr>
                                 ) : (
                                     orders.orders.map((o) => (
                                         <tr key={o._id} className="hover:bg-gray-50 align-top">
@@ -326,7 +326,7 @@ const CustomerProfile = () => {
                                                     rel="noopener noreferrer"
                                                     className="text-blue-700 hover:underline"
                                                 >
-                                                    Memo dekhun
+                                                    Memo
                                                 </Link>
                                             </td>
                                         </tr>
@@ -348,14 +348,14 @@ const CustomerProfile = () => {
                                     onClick={() => setPage((p) => p - 1)}
                                     className="px-3 py-1.5 rounded-lg border border-gray-300 disabled:opacity-40"
                                 >
-                                    ‹ Ager
+                                    ← Previous
                                 </button>
                                 <button
                                     disabled={page >= orders.pages}
                                     onClick={() => setPage((p) => p + 1)}
                                     className="px-3 py-1.5 rounded-lg border border-gray-300 disabled:opacity-40"
                                 >
-                                    Porer ›
+                                    Next →
                                 </button>
                             </div>
                         )}
@@ -365,7 +365,7 @@ const CustomerProfile = () => {
                 {/* Side panels */}
                 <div className="space-y-5">
                     <div className="bg-white rounded-xl border border-gray-200 p-4">
-                        <h2 className="text-lg font-bold text-gray-900">Gata 6 mash</h2>
+                        <h2 className="text-lg font-bold text-gray-900">Last 6 months</h2>
                         <div className="flex items-end gap-3 h-36 mt-4">
                             {stats.lastSixMonths.map((m, i) => (
                                 <div key={m.month} className="flex-1 flex flex-col items-center justify-end h-full">
@@ -380,14 +380,14 @@ const CustomerProfile = () => {
                             ))}
                         </div>
                         <p className="text-xs text-gray-500 mt-3">
-                            Bar = order shonkha.
+                            Bars show number of orders.
                             {busiest.orders > 0 && ` ${monthShort(busiest.month)} e shobcheye beshi (${busiest.orders}).`}
                         </p>
                     </div>
 
                     {companies.length > 0 && (
                         <div className="bg-white rounded-xl border border-gray-200 p-4">
-                            <h2 className="text-lg font-bold text-gray-900">Dokan ({companies.length})</h2>
+                            <h2 className="text-lg font-bold text-gray-900">Shops ({companies.length})</h2>
                             <ul className="mt-3 space-y-2 text-sm">
                                 {companies.slice(0, 8).map((c) => (
                                     <li key={c.name} className="flex justify-between gap-3">
@@ -405,7 +405,7 @@ const CustomerProfile = () => {
                                 ))}
                             </ul>
                             {companies.length > 8 && (
-                                <p className="text-xs text-gray-500 mt-2">Aro {companies.length - 8} ta dokan, upore filter e dekhun</p>
+                                <p className="text-xs text-gray-500 mt-2">{companies.length - 8} more shops. Use the Shop filter above.</p>
                             )}
                         </div>
                     )}
