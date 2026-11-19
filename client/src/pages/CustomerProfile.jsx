@@ -328,6 +328,12 @@ const CustomerProfile = () => {
                                                 >
                                                     Memo
                                                 </Link>
+                                                <Link
+                                                    to={`/orders/${o._id}/edit`}
+                                                    className="ml-3 text-blue-700 hover:underline"
+                                                >
+                                                    Edit
+                                                </Link>
                                             </td>
                                         </tr>
                                     ))
