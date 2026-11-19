@@ -3,7 +3,7 @@ import PropTypes from "prop-types";
 import ProfileImageUploader from "./ProfileImageUploader";
 import { useParams } from "react-router-dom";
 import axios from "axios";
-import { Bounce, toast, ToastContainer } from "react-toastify";
+import { Bounce, toast } from "react-toastify";
 import { apiUrl, UserContext } from "../context/UserContext.jsx";
 import ProfileImageUpdate from "./ProfileImageUpdate.jsx";
 
@@ -249,7 +249,6 @@ function UpdateUser() {
                 {/* Right Section: Profile Picture */}
                 <ProfileImageUpdate onImageSelect={handleImageSelect}/>
             </form>
-            <ToastContainer />
         </div>
     );
 }

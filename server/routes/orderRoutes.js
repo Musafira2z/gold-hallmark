@@ -5,6 +5,7 @@ const multer = require("multer");
 const upload = multer({dest: "uploads/"});
 
 router.get("/", orderController.getOrders);
+router.get("/summary", orderController.getOrderSummary); // before "/:id"
 router.post("/", upload.single("image"), orderController.createOrder);
 router.delete("/:id", orderController.deleteOrder);
 router.get("/:id", orderController.getOrderById);

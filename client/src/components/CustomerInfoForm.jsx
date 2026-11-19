@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import PropTypes from "prop-types";
 import axios from "axios";
+import { toast } from "react-toastify";
 import ProfileImageUploader from "./ProfileImageUploader";
 import { apiUrl } from "../context/UserContext.jsx";
 
@@ -128,6 +129,7 @@ function CustomerInfoForm({ onAddCustomer }) {
             setSelectedImage(null);
         } catch (error) {
             console.error("Error adding customer:", error.response ? error.response.data : error.message);
+            toast.error("Customer was NOT saved. Please try again.");
         }
     };
     // Handle Enter key press - submit form if all fields are filled
@@ -171,14 +173,12 @@ function CustomerInfoForm({ onAddCustomer }) {
             <form
                 onSubmit={handleSubmit}
                 onKeyDown={handleKeyDown}
-                className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden"
+                className="bg-white rounded-xl shadow-sm border border-blue-200 ring-2 ring-blue-100 overflow-hidden"
             >
                 {/* Header Section */}
-                <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-5">
-                    <h2 className="text-2xl font-bold text-white mb-1">
-                        Add New Customer
-                    </h2>
-                    <p className="text-blue-100 text-sm">Fill in the customer details below to add them to the system</p>
+                <div className="px-6 py-3 border-b border-gray-100">
+                    <h2 className="font-semibold text-gray-900">New customer</h2>
+                    <p className="text-gray-500 text-sm">Fill in the details. Press Enter to save.</p>
                 </div>
 
                 {/* User Info Form Section - Full Width */}

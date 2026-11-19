@@ -1,8 +1,19 @@
 const OrderService = require("../services/orderService");
 
 const { monthRange } = require("../services/customerStats");
+const { dayRange, getSummary } = require("../services/orderSummary");
 
-const FILTER_KEYS = ["customerID", "month", "company", "type", "page", "limit"];
+const FILTER_KEYS = ["customerID", "month", "day", "company", "type", "q", "page", "limit"];
+
+// Today / this month / last 7 days, counted on the server.
+exports.getOrderSummary = async (_req, res) => {
+    try {
+        res.json(await getSummary());
+    } catch (error) {
+        console.error("Error building order summary:", error);
+        res.status(500).json({ error: "Failed to build summary" });
+    }
+};
 
 exports.getOrders = async (req, res) => {
     const { date } = req.query;  // Date passed in the query parameter (optional)
@@ -11,20 +22,26 @@ exports.getOrders = async (req, res) => {
         // New: any of these filters returns a paged result { orders, total, page, pages, limit }.
         // Without them the old behaviour below is unchanged.
         if (FILTER_KEYS.some((key) => req.query[key] !== undefined)) {
-            const { customerID, month, company, type } = req.query;
+            const { customerID, month, day, company, type, q } = req.query;
             // Only plain strings, so ?company[$ne]=x can't turn into a Mongo operator.
-            if ([customerID, month, company, type].some((v) => v !== undefined && typeof v !== "string")) {
+            if ([customerID, month, day, company, type, q].some((v) => v !== undefined && typeof v !== "string")) {
                 return res.status(400).json({ error: "Invalid filter" });
             }
             if (month !== undefined && !monthRange(month)) {
                 return res.status(400).json({ error: "month must look like 2026-11" });
+            }
+            if (day !== undefined && !dayRange(day)) {
+                return res.status(400).json({ error: "day must look like 2026-11-19" });
+            }
+            if (q !== undefined && q.length > 100) {
+                return res.status(400).json({ error: "Search text too long" });
             }
             const page = Number(req.query.page ?? 1);
             const limit = Number(req.query.limit ?? 50);
             if (!Number.isInteger(page) || page < 1 || !Number.isInteger(limit) || limit < 1 || limit > 200) {
                 return res.status(400).json({ error: "page must be 1 or more, limit 1 to 200" });
             }
-            const result = await OrderService.queryOrders({ customerID, month, company, type, page, limit });
+            const result = await OrderService.queryOrders({ customerID, month, day, company, type, q, page, limit });
             return res.json(result);
         }
 

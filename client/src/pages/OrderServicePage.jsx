@@ -1,6 +1,8 @@
 import React, { useContext, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import axios from "axios";
+import { toast } from "react-toastify";
+import PropTypes from "prop-types";
 import Select from "react-select";
 import CreatableSelect from "react-select/creatable";
 import { CgRemove } from "react-icons/cg";
@@ -51,7 +53,6 @@ const OrderServicePage = ({
     const prefillDone = useRef(false);
     const { itemOptions, loading: itemLoading, createItem } = useItemNames(serviceType);
 
-    const [ordersData, setOrdersData] = useState([]);
     const [totalAmount, setTotalAmount] = useState(0);
     const [searchByType, setSearchByType] = useState("id"); // "id" | "phone"
     const [selectedCustomerId, setSelectedCustomerId] = useState("");
@@ -317,7 +318,6 @@ const OrderServicePage = ({
                 headers: { "Content-Type": "multipart/form-data" },
             });
 
-            setOrdersData((prevData) => [...prevData, response.data]);
             setImageName("");
             setCapturedImage(null);
             setAddedItems([]);
@@ -332,23 +332,10 @@ const OrderServicePage = ({
             }
         } catch (error) {
             console.error("Error uploading data:", error);
+            toast.error("Order was NOT saved. Please try again.");
         }
     };
 
-    useEffect(() => {
-        const fetchOrderData = async () => {
-            try {
-                const response = await axios.get(`${apiUrl}/orders`);
-                setOrdersData(response.data || []);
-            } catch (error) {
-                console.error("Error fetching order data:", error);
-            }
-        };
-        fetchOrderData();
-    }, []);
-
-    const _newOrderData = ordersData.filter((order) => order.type === serviceType);
-    // _newOrderData is retained for potential future use such as dashboards or summaries
 
     const openCamera = () => {
         setIsModalOpen(true);
@@ -423,7 +410,7 @@ const OrderServicePage = ({
         <div className="min-h-screen">
             <div className="card-modern w-full">
                 <div className="mb-6">
-                    <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent mb-2">
+                    <h1 className="text-2xl font-bold text-gray-900 mb-1">
                         {heading}
                     </h1>
                     <p className="text-gray-500">{description}</p>
@@ -756,6 +743,14 @@ const OrderServicePage = ({
             </div>
         </div>
     );
+};
+
+OrderServicePage.propTypes = {
+    serviceType: PropTypes.oneOf(["hallmark", "xray"]).isRequired,
+    heading: PropTypes.string.isRequired,
+    description: PropTypes.string,
+    noteLabel: PropTypes.string,
+    retainItemNameOnAdd: PropTypes.bool,
 };
 
 export default OrderServicePage;

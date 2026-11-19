@@ -1,36 +1,29 @@
 import { Outlet, useLocation } from "react-router-dom";
+import { ToastContainer } from "react-toastify";
 import Sidebar from "./components/Sidebar";
-import Navbar from "./components/Navbar";
+import TopBar from "./components/TopBar";
 
 function App() {
-  const location = useLocation(); // Get the current location (route)
+  const location = useLocation();
 
-  // Check if the current route is the invoice page
-  const isInvoicePage = location.pathname.includes('/invoice');
+  // The invoice (memo) page is printed, so it gets no menu or top bar.
+  if (location.pathname.startsWith("/invoice")) {
+    return <Outlet />;
+  }
 
   return (
     <div className="h-screen flex flex-col bg-gray-50 overflow-hidden">
-      {/* Conditionally render Navbar and Sidebar */}
-      {!isInvoicePage && (
-        <div className="w-full flex-shrink-0">
-          <Navbar />
-        </div>
-      )}
-      
-      {/* Only show Sidebar if it's not the Invoice page */}
-      {!isInvoicePage && (
-        <div className="flex flex-1 overflow-hidden">
-          <Sidebar />
-          <div className="flex-1 overflow-auto">
-            <div className="p-4 lg:p-6">
-              <Outlet />
-            </div>
+      <TopBar />
+      <div className="flex flex-1 overflow-hidden">
+        <Sidebar />
+        <main className="flex-1 overflow-auto">
+          <div className="mx-auto max-w-7xl p-4 lg:p-6">
+            <Outlet />
           </div>
-        </div>
-      )}
-
-      {/* Invoice page will show only the invoice content */}
-      {isInvoicePage && <Outlet />}
+        </main>
+      </div>
+      {/* Was inside <RouterProvider> in main.jsx, where it never rendered. */}
+      <ToastContainer position="top-right" autoClose={2500} />
     </div>
   );
 }
