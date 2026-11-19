@@ -9,6 +9,7 @@ import UpdateUser from "../components/UpdateUser";
 import XRay from "../pages/Xray";
 import Hallmark from "../pages/Hallmark";
 import Invoice from "../pages/Invoice";
+import CustomerProfile from "../pages/CustomerProfile";
 
 const router = createBrowserRouter([
     {
@@ -30,6 +31,10 @@ const router = createBrowserRouter([
             {
                 path: "/account",
                 element: <Account />
+            },
+            {
+                path: "/customers/:customerID",
+                element: <CustomerProfile />
             },
             {
                 path: "/updateuser/:id",

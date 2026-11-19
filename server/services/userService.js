@@ -1,4 +1,5 @@
 const User = require("../models/User");
+const { getCustomerStats } = require("./customerStats");
 
 exports.getAllUsers = async () => {
     return await User.find({});
@@ -48,4 +49,14 @@ exports.deleteUser = async (id) => {
 exports.getLastCustomerID = async () => {
     const lastCustomer = await User.findOne().sort({ customerID: -1 }).limit(1);
     return lastCustomer ? lastCustomer.customerID : 0;
+};
+
+// Customer + their numbers for the profile page. null if no such customer.
+exports.getCustomerProfile = async (customerID) => {
+    const id = Number(customerID);
+    if (!Number.isSafeInteger(id)) return null;
+    const customer = await User.findOne({ customerID: id }).lean();
+    if (!customer) return null;
+    const stats = await getCustomerStats(id);
+    return { customer, stats };
 };

@@ -41,6 +41,7 @@ router.post("/create", upload.single("image"), userController.createUser);
 router.put("/update/:id", upload.single("image"), userController.updateUser);
 router.delete("/delete/:id", userController.deleteUser);
 router.get("/lastCustomerID", userController.getLastCustomerID);
+router.get("/:customerID/profile", userController.getCustomerProfile);
 
 router.use((err, _req, res, next) => {
     if (err instanceof multer.MulterError) {

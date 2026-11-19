@@ -1,4 +1,5 @@
-import React, { useContext, useEffect, useMemo, useState } from "react";
+import React, { useContext, useEffect, useMemo, useRef, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import axios from "axios";
 import Select from "react-select";
 import CreatableSelect from "react-select/creatable";
@@ -45,6 +46,9 @@ const OrderServicePage = ({
     retainItemNameOnAdd = false,
 }) => {
     const { customers } = useContext(UserContext);
+    const [searchParams] = useSearchParams();
+    const prefillCustomerID = searchParams.get("customer");
+    const prefillDone = useRef(false);
     const { itemOptions, loading: itemLoading, createItem } = useItemNames(serviceType);
 
     const [ordersData, setOrdersData] = useState([]);
@@ -255,6 +259,15 @@ const OrderServicePage = ({
             }));
         }
     };
+
+    // Opened from a customer profile (/hallmark?customer=214): select that customer once.
+    useEffect(() => {
+        if (!prefillCustomerID || prefillDone.current || customers.length === 0) return;
+        const match = customers.find((c) => String(c.customerID) === prefillCustomerID);
+        prefillDone.current = true;
+        if (match) handleCustomerSelect({ value: match.customerID });
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [prefillCustomerID, customers]);
 
     const handleCompanyChange = (event) => {
         setSelectedCompany(event.target.value);

@@ -49,3 +49,16 @@ exports.getLastCustomerID = async (req, res) => {
         res.status(500).json({ error: "Error fetching last customer ID", details: error });
     }
 };
+
+exports.getCustomerProfile = async (req, res) => {
+    try {
+        const profile = await UserService.getCustomerProfile(req.params.customerID);
+        if (!profile) {
+            return res.status(404).json({ error: "Customer not found" });
+        }
+        res.json(profile);
+    } catch (error) {
+        console.error("Error fetching customer profile:", error);
+        res.status(500).json({ error: "Failed to fetch customer profile" });
+    }
+};
