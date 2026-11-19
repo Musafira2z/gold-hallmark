@@ -1,6 +1,7 @@
 const Order = require("../models/Order");
 const { monthRange } = require("./customerStats");
 const { dayRange } = require("./orderSummary");
+const { nextVoucher, syncVoucherCounter } = require("./memoNumber");
 
 exports.getAllOrders = async () => {
     return await Order.find({});
@@ -25,18 +26,31 @@ const cleanItems = (items) =>
     });
 exports.cleanItems = cleanItems;
 
+const isDuplicateVoucher = (error) => error && error.code === 11000 && /voucher/.test(error.message || "");
+
 exports.createOrder = async (orderData, items, file) => { // Add items parameter
     const imagePath = file ? `/uploads/${file.filename}` : null; // Or your cloud storage logic
-    try {
-        const newOrder = new Order({
-            ...orderData,
-            items: cleanItems(items), // numbers only; bad values become null
-            image: imagePath,
-        });
-        return await newOrder.save();
-    } catch (error) {
-        console.error("Error creating order:", error); // Important for debugging
-        throw error; // Re-throw the error to be handled by the controller
+    // The server gives the memo number; anything the browser sent is ignored (BUGS D2).
+    // eslint-disable-next-line no-unused-vars
+    const { voucher: _ignored, ...data } = orderData;
+    for (let attempt = 1; ; attempt += 1) {
+        try {
+            const newOrder = new Order({
+                ...data,
+                voucher: await nextVoucher(),
+                items: cleanItems(items), // numbers only; bad values become null
+                image: imagePath,
+            });
+            return await newOrder.save();
+        } catch (error) {
+            // Counter behind the saved numbers (e.g. after a restore): catch up and try again.
+            if (isDuplicateVoucher(error) && attempt < 3) {
+                await syncVoucherCounter();
+                continue;
+            }
+            console.error("Error creating order:", error); // Important for debugging
+            throw error; // Re-throw the error to be handled by the controller
+        }
     }
 };
 

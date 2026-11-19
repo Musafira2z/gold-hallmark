@@ -27,6 +27,9 @@ const orderSchema = new mongoose.Schema({
 // Indexes only speed up lookups; they do not change any stored data.
 orderSchema.index({ customerID: 1, createdAt: -1 }); // customer profile / history
 orderSchema.index({ createdAt: -1 });                // day summary, newest first
+// New memo numbers (1000001+) must be unique. Old random 6-digit numbers
+// have duplicates and are left as they are.
+orderSchema.index({ voucher: 1 }, { unique: true, partialFilterExpression: { voucher: { $gt: 1000000 } } });
 
 const Order = mongoose.model("Order", orderSchema);
 
