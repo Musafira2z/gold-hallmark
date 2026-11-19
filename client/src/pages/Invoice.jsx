@@ -142,7 +142,7 @@ const Invoice = () => {
                                 <td className="border border-gray-600 px-4 text-sm py-0">{item.item}</td>
                                 <td className="border border-gray-600 px-4 text-sm py-0">{item.quantity}</td>
                                 <td className="border border-gray-600 px-4 text-sm py-0">{item.rate}</td>
-                                <td className="border border-gray-600 px-4 text-sm py-0">{item.weight} {item.weightUnite}</td>
+                                <td className="border border-gray-600 px-4 text-sm py-0">{item.weight === null || item.weight === undefined || item.weight === "" ? "—" : `${item.weight} ${item.weightUnite || ""}`}</td>
                                 <td className="border border-gray-600 px-4 text-sm py-0">{item.xray}</td> {/* Assuming xray applies to all items */}
                                 <td className="border border-gray-600 px-4 text-sm py-0">{item.amount}</td>
                             </tr>

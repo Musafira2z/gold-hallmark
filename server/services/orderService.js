@@ -6,12 +6,31 @@ exports.getAllOrders = async () => {
     return await Order.find({});
 };
 
+// Number fields of an item: anything that is not a number (e.g. "" or the
+// word "Weight") is stored as null instead of failing the whole order (BUGS F7).
+const ITEM_NUMBER_FIELDS = ["quantity", "rate", "weight", "amount"];
+const cleanItems = (items) =>
+    (Array.isArray(items) ? items : []).map((item) => {
+        const clean = { ...item };
+        ITEM_NUMBER_FIELDS.forEach((field) => {
+            const value = clean[field];
+            if (value === null || value === undefined || String(value).trim() === "") {
+                clean[field] = null;
+            } else {
+                const n = Number(value);
+                clean[field] = Number.isFinite(n) ? n : null;
+            }
+        });
+        return clean;
+    });
+exports.cleanItems = cleanItems;
+
 exports.createOrder = async (orderData, items, file) => { // Add items parameter
     const imagePath = file ? `/uploads/${file.filename}` : null; // Or your cloud storage logic
     try {
         const newOrder = new Order({
             ...orderData,
-            items: items, // Include the items array
+            items: cleanItems(items), // numbers only; bad values become null
             image: imagePath,
         });
         return await newOrder.save();

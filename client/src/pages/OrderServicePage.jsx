@@ -11,11 +11,14 @@ import { apiUrl, UserContext } from "../context/UserContext.jsx";
 import useItemNames from "../hooks/useItemNames.js";
 import { formatContactForDisplay } from "../utils/formatContact.js";
 
-const createItemState = (prefilledItem = "", withPlaceholders = false) => ({
+// Fields start empty. (They used to start with the words "Quantity", "Rate",
+// "Weight" as real values; an untouched Weight was sent as "Weight" and the
+// server refused the whole order - BUGS F7.)
+const createItemState = (prefilledItem = "") => ({
     item: prefilledItem,
-    quantity: withPlaceholders ? "Quantity" : "",
-    rate: withPlaceholders ? "Rate" : "",
-    weight: withPlaceholders ? "Weight" : "",
+    quantity: "",
+    rate: "",
+    weight: "",
     amount: "",
     weightUnite: "gm",
     xray: "",
@@ -40,6 +43,34 @@ const createInitialFormData = (serviceType) => ({
 
 const flattenItems = (groups = []) => groups.flat();
 
+// "2.5" -> 2.5, "" / "abc" -> null. Weight may be left empty.
+const toNumberOrNull = (value) => {
+    if (value === null || value === undefined || String(value).trim() === "") return null;
+    const n = Number(value);
+    return Number.isFinite(n) ? n : null;
+};
+
+// Numbers as numbers before sending, so the server never sees words.
+const cleanItem = (item) => ({
+    ...item,
+    item: String(item.item || "").trim(),
+    quantity: toNumberOrNull(item.quantity),
+    rate: toNumberOrNull(item.rate),
+    weight: toNumberOrNull(item.weight),
+    amount: toNumberOrNull(item.amount) ?? 0,
+});
+
+// First problem with an item, or "" if it is fine. Quantity and Rate are required.
+const itemProblem = (item, position) => {
+    const label = `Item ${position}${item.item ? ` (${item.item})` : ""}`;
+    if (!String(item.item || "").trim()) return `${label}: choose the item name.`;
+    const quantity = toNumberOrNull(item.quantity);
+    if (quantity === null || quantity <= 0) return `${label}: enter Quantity.`;
+    const rate = toNumberOrNull(item.rate);
+    if (rate === null || rate < 0) return `${label}: enter Rate.`;
+    return "";
+};
+
 const OrderServicePage = ({
     serviceType,
     heading,
@@ -57,7 +88,7 @@ const OrderServicePage = ({
     const [searchByType, setSearchByType] = useState("id"); // "id" | "phone"
     const [selectedCustomerId, setSelectedCustomerId] = useState("");
     const [selectedCompany, setSelectedCompany] = useState("");
-    const [items, setItems] = useState([createItemState("", true)]);
+    const [items, setItems] = useState([createItemState("")]);
     const [formData, setFormData] = useState(createInitialFormData(serviceType));
     const [addedItems, setAddedItems] = useState([]);
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -160,7 +191,7 @@ const OrderServicePage = ({
         setAddedItems(updatedItems);
 
         const nextItemName = retainItemNameOnAdd ? items[0]?.item || "" : "";
-        setItems([createItemState(nextItemName, false)]);
+        setItems([createItemState(nextItemName)]);
         setTotalAmount(calculateTotal(flattenItems(updatedItems)));
     };
 
@@ -293,11 +324,11 @@ const OrderServicePage = ({
             return;
         }
 
-        const hasValidItems = flattenItems(allItems).some(
-            (item) => item.item && item.quantity && item.rate,
-        );
-        if (!hasValidItems) {
-            alert("Please fill in all required product fields (Item, Quantity, Rate) before submitting.");
+        const problem = flattenItems(allItems)
+            .map((item, i) => itemProblem(item, i + 1))
+            .find(Boolean);
+        if (problem) {
+            alert(problem);
             return;
         }
 
@@ -309,7 +340,7 @@ const OrderServicePage = ({
             }
         });
 
-        payload.append("items", JSON.stringify(flattenItems(allItems)));
+        payload.append("items", JSON.stringify(flattenItems(allItems).map(cleanItem)));
         payload.append("totalAmount", calculatedTotalAmount);
         payload.append("voucher", generateVoucher());
 
@@ -321,7 +352,7 @@ const OrderServicePage = ({
             setImageName("");
             setCapturedImage(null);
             setAddedItems([]);
-            setItems([createItemState("", false)]);
+            setItems([createItemState("")]);
             setTotalAmount(0);
             setFormData((prevData) => ({ ...prevData, image: null }));
 
