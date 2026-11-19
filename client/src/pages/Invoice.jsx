@@ -3,6 +3,16 @@ import { useEffect, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
 import "./print.css"
 import { apiUrl } from "../context/UserContext.jsx";
+import { formatContactForDisplay } from "../utils/formatContact.js";
+
+// Dates on the memo are always Bangladesh time, whatever the PC's clock zone is.
+const TZ = "Asia/Dhaka";
+const memoDate = (value) => new Date(value).toLocaleDateString("en-GB", { timeZone: TZ });
+const memoTime = (value) =>
+    new Date(value).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true, timeZone: TZ });
+// Delivery date is stored as a calendar day (midnight UTC), so read it as UTC.
+const deliveryDay = (value) => new Date(value).toLocaleDateString("en-GB", { timeZone: "UTC" });
+const MEMO_TITLE = { hallmark: "Hallmark Cash Memo", xray: "X-ray Cash Memo" };
 const Invoice = () => {
     const { id } = useParams(); // Get the order ID from the URL
     const [order, setOrder] = useState(null);
@@ -85,7 +95,7 @@ const Invoice = () => {
     }
     return (
         <div className="bg-[#E0F2F1] h-[100vh] pt-20 print-content">
-            <h2 className="text-center pt-5 font-semibold text-xl -ml-3">Hallmark Cash Memo</h2>
+            <h2 className="text-center pt-5 font-semibold text-xl -ml-3">{MEMO_TITLE[order.type] || "Cash Memo"}</h2>
             <div className="bg-white px-20 rounded-lg mt-2 max-w-6xl mx-auto">
                 <div className="grid grid-cols-3 gap-2 items-start mb-1">
                     <div className="">
@@ -97,7 +107,7 @@ const Invoice = () => {
                             <span className="">Name:</span> {order?.name}
                         </p>
                         <p className="text-sm">
-                            <span className="">Mobile:</span> {order?.contact}
+                            <span className="">Mobile:</span> {formatContactForDisplay(order?.contact)}
                         </p>
                         <p className="text-sm">
                             <span className="">Company:</span> {order?.company}
@@ -107,19 +117,21 @@ const Invoice = () => {
                         </p>
                     </div>
                     <div >
-                        <img className="w-11/12" src={`${apiUrl}${order.image}`} alt="" />
+                        {order.image && <img className="w-11/12" src={`${apiUrl}${order.image}`} alt="" />}
                     </div>
                     <div className="ml-2 mt-20">
                         <p className="text-sm">
-                            <span className="">Voucher Number:</span> {order?.voucher}
+                            <span className="">Memo No:</span> {order?.voucher ?? "N/A"}
                         </p>
                         <p className="text-sm">
-                            <span className="">Delivery Date:</span> {order?.createdAt ? new Date(order.createdAt).toLocaleDateString('en-GB') : 'N/A'}
+                            <span className="">Date:</span>{" "}
+                            {order?.createdAt ? `${memoDate(order.createdAt)}, ${memoTime(order.createdAt)}` : "N/A"}
                         </p>
-                        <p className="text-sm">
-                            <span className="">Delivery Time:</span>
-                            {order?.createdAt ? new Date(order.createdAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }) : 'N/A'}
-                        </p>
+                        {order?.customerFrom && order?.createdAt && deliveryDay(order.customerFrom) !== memoDate(order.createdAt) && (
+                            <p className="text-sm">
+                                <span className="">Delivery:</span> {deliveryDay(order.customerFrom)}
+                            </p>
+                        )}
                     </div>
 
                 </div>

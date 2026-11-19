@@ -371,8 +371,6 @@ const OrderServicePage = ({
         }));
     };
 
-    const generateVoucher = () => Math.floor(100000 + Math.random() * 900000).toString();
-
     const handleSubmit = async (event) => {
         event.preventDefault();
         if (saving) return; // a second click while saving must not make a second order
@@ -415,7 +413,7 @@ const OrderServicePage = ({
 
         payload.append("items", JSON.stringify(flattenItems(allItems).map(cleanItem)));
         payload.append("totalAmount", calculatedTotalAmount);
-        payload.append("voucher", generateVoucher());
+        // The memo number is given by the server (1000001, 1000002, ...).
 
         try {
             const response = await axios.post(`${apiUrl}/orders`, payload, {

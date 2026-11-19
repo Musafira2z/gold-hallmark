@@ -5,6 +5,7 @@ const path = require("path");
 
 const connectDB = require("./config/db"); // Import database connection
 const { ensureDefaultItems } = require("./services/itemService");
+const { syncVoucherCounter } = require("./services/memoNumber");
 
 const userRoutes = require("./routes/userRoutes");
 const orderRoutes = require("./routes/orderRoutes");
@@ -24,6 +25,8 @@ connectDB()
         console.log("Connected to the database...");
         await ensureDefaultItems();
         console.log("Default item names are synced.");
+        await syncVoucherCounter();
+        console.log("Memo number counter is ready.");
     })
     .catch((error) => {
         console.error("Failed to connect to the database", error);
