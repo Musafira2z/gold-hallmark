@@ -1,7 +1,6 @@
 require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
-const path = require("path");
 
 const connectDB = require("./config/db"); // Import database connection
 const { ensureDefaultItems } = require("./services/itemService");
@@ -14,14 +13,17 @@ const authRoutes = require("./routes/authRoutes");
 const staffRoutes = require("./routes/staffRoutes");
 const paymentRoutes = require("./routes/paymentRoutes");
 const { requireAuth, requireOwner } = require("./middleware/auth");
+const { uploadsDir } = require("./middleware/upload");
 
 const app = express();
 
 app.use(cors());
 app.use(express.json());
 
-// Serve static files for images
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+// Photos: only for logged-in staff (BUGS S5). The app fetches them with the token.
+app.use("/uploads", requireAuth, express.static(uploadsDir, {
+    setHeaders: (res) => res.set("X-Content-Type-Options", "nosniff"),
+}));
 
 // Connect to MongoDB
 connectDB()

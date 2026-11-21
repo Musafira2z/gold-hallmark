@@ -21,6 +21,8 @@ CHECK_EVERY_SECONDS="${CHECK_EVERY_SECONDS:-300}"
 MIN_DROP_PERCENT="${MIN_DROP_PERCENT:-50}" # warn if orders fall below this % of last backup
 
 WEEKLY_DIR="$BACKUP_DIR/weekly"
+PHOTOS_SRC="${PHOTOS_SRC:-/uploads}"       # the app's photo folder (read-only)
+PHOTOS_DIR="$BACKUP_DIR/photos"
 LOG="$BACKUP_DIR/backup-log.txt"
 LAST_COUNT_FILE="$BACKUP_DIR/.last-order-count"
 # Good backups: goldhallmark-YYYYMMDD-HHMM.gz (same name style as the old script)
@@ -110,12 +112,28 @@ take_backup() {
 
   mv "$tmp" "$final"
   log "OK: $name ($(du -h "$final" | cut -f1), customer $customers, order $orders)"
+  copy_photos
 
   if [ -z "$suffix" ]; then
     echo "${orders:-0}" >"$LAST_COUNT_FILE"
     weekly_copy "$final"
     prune
   fi
+  return 0
+}
+
+# Photos never change, so copy only the new ones and never delete any.
+copy_photos() {
+  [ -d "$PHOTOS_SRC" ] || return 0
+  mkdir -p "$PHOTOS_DIR"
+  local f n=0 missing=0
+  for f in "$PHOTOS_SRC"/*; do
+    [ -f "$f" ] || continue
+    [ -e "$PHOTOS_DIR/${f##*/}" ] && continue
+    if cp -p "$f" "$PHOTOS_DIR/${f##*/}"; then n=$((n + 1)); else missing=$((missing + 1)); fi
+  done
+  [ "$n" -gt 0 ] && log "OK: photo $n ta notun copy holo (photos/ e mot $(ls -1 "$PHOTOS_DIR" | wc -l))"
+  [ "$missing" -gt 0 ] && log "WARNING: $missing ta photo copy kora gelo na"
   return 0
 }
 

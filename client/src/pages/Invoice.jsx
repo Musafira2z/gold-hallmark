@@ -4,6 +4,7 @@ import { useParams } from "react-router-dom";
 import "./print.css"
 import { apiUrl } from "../context/UserContext.jsx";
 import { formatContactForDisplay } from "../utils/formatContact.js";
+import { loadPhoto } from "../utils/authImage.js";
 
 // Dates on the memo are always Bangladesh time, whatever the PC's clock zone is.
 const TZ = "Asia/Dhaka";
@@ -20,12 +21,22 @@ const Invoice = () => {
     const { id } = useParams(); // Get the order ID from the URL
     const [order, setOrder] = useState(null);
     const [balance, setBalance] = useState(null);
+    const [photo, setPhoto] = useState(null);
     const didPrint = useRef(false);
 
     useEffect(() => {
         const fetchOrderData = async () => {
             try {
                 const response = await axios.get(`${apiUrl}/orders/${id}`);
+                // The photo needs the login token (BUGS S5). Load it before printing,
+                // but never hold the memo up for more than 5 seconds.
+                if (response.data?.image) {
+                    const photoUrl = await Promise.race([
+                        loadPhoto(response.data.image).catch(() => null),
+                        new Promise((resolve) => setTimeout(() => resolve(null), 5000)),
+                    ]);
+                    setPhoto(photoUrl);
+                }
                 setOrder(response.data); // Update the order state
                 // Customer's total dues, printed under this memo's own numbers.
                 if (response.data?.customerID) {
@@ -132,7 +143,7 @@ const Invoice = () => {
                         </p>
                     </div>
                     <div >
-                        {order.image && <img className="w-11/12" src={`${apiUrl}${order.image}`} alt="" />}
+                        {photo && <img className="w-11/12" src={photo} alt="" />}
                     </div>
                     <div className="ml-2 mt-20">
                         <p className="text-sm">
