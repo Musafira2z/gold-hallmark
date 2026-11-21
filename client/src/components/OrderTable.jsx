@@ -7,7 +7,7 @@ const pieces = (order) => (order.items || []).reduce((sum, i) => sum + (Number(i
 
 // One table for orders everywhere (Today, Orders). Each row: memo number,
 // when, customer (links to the profile), type, pieces, amount, Memo button.
-function OrderTable({ orders, showDate = true, onDelete }) {
+function OrderTable({ orders, showDate = true, onDelete, onRestore }) {
     return (
         <div className="overflow-x-auto">
             <table className="w-full text-sm">
@@ -61,10 +61,17 @@ function OrderTable({ orders, showDate = true, onDelete }) {
                                     <Button to={`/invoice/${order._id}`} target="_blank" rel="noreferrer" variant="secondary" size="sm">
                                         Memo
                                     </Button>
-                                    <Button to={`/orders/${order._id}/edit`} variant="secondary" size="sm" aria-label={`Edit memo ${order.voucher ?? ""}`}>
-                                        Edit
-                                    </Button>
-                                    {onDelete && (
+                                    {!order.deletedAt && (
+                                        <Button to={`/orders/${order._id}/edit`} variant="secondary" size="sm" aria-label={`Edit memo ${order.voucher ?? ""}`}>
+                                            Edit
+                                        </Button>
+                                    )}
+                                    {onRestore && order.deletedAt && (
+                                        <Button size="sm" onClick={() => onRestore(order)} aria-label={`Restore memo ${order.voucher ?? ""}`}>
+                                            Restore
+                                        </Button>
+                                    )}
+                                    {onDelete && !order.deletedAt && (
                                         <Button variant="danger" size="sm" onClick={() => onDelete(order)} aria-label={`Delete memo ${order.voucher ?? ""}`}>
                                             Delete
                                         </Button>
@@ -83,6 +90,7 @@ OrderTable.propTypes = {
     orders: PropTypes.arrayOf(PropTypes.object).isRequired,
     showDate: PropTypes.bool,
     onDelete: PropTypes.func,
+    onRestore: PropTypes.func,
 };
 
 export default OrderTable;

@@ -1,4 +1,5 @@
 import {createContext, useEffect, useState} from "react";
+import axios from "axios";
 import PropTypes from "prop-types";
 
 // eslint-disable-next-line react-refresh/only-export-components
@@ -34,18 +35,14 @@ const UserContextProvider = ({children}) => {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                // Fetch customers and last customer ID in parallel
+                // axios, so the login token goes with the request (see AuthContext)
                 const [customersResponse, lastCustomerIDResponse] = await Promise.all([
-                    fetch(`${apiUrl}/users`),
-                    fetch(`${apiUrl}/users/lastCustomerID`)
+                    axios.get(`${apiUrl}/users`),
+                    axios.get(`${apiUrl}/users/lastCustomerID`)
                 ]);
 
-                if (!customersResponse.ok || !lastCustomerIDResponse.ok) {
-                    throw new Error('Network response was not ok');
-                }
-
-                const customersData = await customersResponse.json();
-                const lastCustomerIDData = await lastCustomerIDResponse.json();
+                const customersData = customersResponse.data;
+                const lastCustomerIDData = lastCustomerIDResponse.data;
 
                 setCustomers(customersData);
                 setUserCustomers(lastCustomerIDData);

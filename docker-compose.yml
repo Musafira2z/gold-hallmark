@@ -11,7 +11,8 @@ services:
       args:
         REACT_APP_API_URL: http://server:5000
     ports:
-      - "3001:80" # Map port 80 from the container to 3000 on the host
+      # BIND_ADDRESS in .env: 127.0.0.1 = only this PC can open the app; empty = whole network (BUGS S3)
+      - "${BIND_ADDRESS:-0.0.0.0}:3001:80"
     environment:
       REACT_APP_API_URL: http://server:5000
     depends_on:
@@ -24,7 +25,7 @@ services:
       context: ./server
       dockerfile: Dockerfile
     ports:
-      - "5000:5000" # Map port 5000 from the container to 5000 on the host
+      - "${BIND_ADDRESS:-0.0.0.0}:5000:5000"
     environment:
       MONGO_URI: mongodb://mongo:27017/goldhallmark
     depends_on:

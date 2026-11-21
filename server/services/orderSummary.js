@@ -42,7 +42,7 @@ const getSummary = async (now = new Date()) => {
 
     const [[result], customers] = await Promise.all([
         Order.aggregate([
-            { $match: { createdAt: { $gte: weekStart < month.start ? weekStart : month.start } } },
+            { $match: { deletedAt: null, createdAt: { $gte: weekStart < month.start ? weekStart : month.start } } },
             {
                 $facet: {
                     today: [{ $match: { createdAt: { $gte: today.start, $lt: today.end } } }, ...totals],
@@ -60,7 +60,7 @@ const getSummary = async (now = new Date()) => {
                 },
             },
         ]),
-        User.countDocuments({}),
+        User.countDocuments({ deletedAt: null }),
     ]);
 
     const empty = { orders: 0, amount: 0, hallmark: 0, xray: 0 };

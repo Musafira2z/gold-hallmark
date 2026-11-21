@@ -10,6 +10,9 @@ const { syncVoucherCounter } = require("./services/memoNumber");
 const userRoutes = require("./routes/userRoutes");
 const orderRoutes = require("./routes/orderRoutes");
 const itemRoutes = require("./routes/itemRoutes");
+const authRoutes = require("./routes/authRoutes");
+const staffRoutes = require("./routes/staffRoutes");
+const { requireAuth, requireOwner } = require("./middleware/auth");
 
 const app = express();
 
@@ -33,10 +36,12 @@ connectDB()
         process.exit(1);
     });
 
-// Use routes
-app.use("/users", userRoutes);
-app.use("/orders", orderRoutes);
-app.use("/items", itemRoutes);
+// Login (open). Everything after this needs a login (BUGS S1/S2).
+app.use("/auth", authRoutes);
+app.use("/users", requireAuth, userRoutes);
+app.use("/orders", requireAuth, orderRoutes);
+app.use("/items", requireAuth, itemRoutes);
+app.use("/admin", requireAuth, requireOwner, staffRoutes); // owner only
 
 app.get("/", (req, res) => {
     res.json("Welcome to Gold Hallmark API");

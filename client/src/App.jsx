@@ -23,7 +23,7 @@ function App() {
         </main>
       </div>
       {/* Was inside <RouterProvider> in main.jsx, where it never rendered. */}
-      <ToastContainer position="top-right" autoClose={2500} />
+      <ToastContainer position="bottom-right" autoClose={2500} />
     </div>
   );
 }

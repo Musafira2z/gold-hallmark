@@ -1,9 +1,10 @@
 const OrderService = require("../services/orderService");
+const { audit } = require("../services/audit");
 
 const { monthRange } = require("../services/customerStats");
 const { dayRange, getSummary } = require("../services/orderSummary");
 
-const FILTER_KEYS = ["customerID", "month", "day", "company", "type", "q", "page", "limit"];
+const FILTER_KEYS = ["customerID", "month", "day", "company", "type", "q", "deleted", "page", "limit"];
 
 // Today / this month / last 7 days, counted on the server.
 exports.getOrderSummary = async (_req, res) => {
@@ -22,7 +23,10 @@ exports.getOrders = async (req, res) => {
         // New: any of these filters returns a paged result { orders, total, page, pages, limit }.
         // Without them the old behaviour below is unchanged.
         if (FILTER_KEYS.some((key) => req.query[key] !== undefined)) {
-            const { customerID, month, day, company, type, q } = req.query;
+            const { customerID, month, day, company, type, q, deleted } = req.query;
+            if (deleted !== undefined && (deleted !== "only" || req.staff.role !== "owner")) {
+                return res.status(403).json({ error: "Only the owner can see deleted orders." });
+            }
             // Only plain strings, so ?company[$ne]=x can't turn into a Mongo operator.
             if ([customerID, month, day, company, type, q].some((v) => v !== undefined && typeof v !== "string")) {
                 return res.status(400).json({ error: "Invalid filter" });
@@ -41,7 +45,7 @@ exports.getOrders = async (req, res) => {
             if (!Number.isInteger(page) || page < 1 || !Number.isInteger(limit) || limit < 1 || limit > 200) {
                 return res.status(400).json({ error: "page must be 1 or more, limit 1 to 200" });
             }
-            const result = await OrderService.queryOrders({ customerID, month, day, company, type, q, page, limit });
+            const result = await OrderService.queryOrders({ customerID, month, day, company, type, q, deleted, page, limit });
             return res.json(result);
         }
 
@@ -74,6 +78,7 @@ exports.createOrder = async (req, res) => {
     try {
         const items = JSON.parse(req.body.items); // Parse the items array
         const order = await OrderService.createOrder(req.body, items, req.file); // Pass items to the service
+        await audit(req, "order.create", order._id, `Memo ${order.voucher}: #${order.customerID} ${order.name || ""}, ${order.totalAmount} taka`);
 
         res.status(201).json(order);
     } catch (error) {
@@ -101,6 +106,8 @@ exports.updateOrder = async (req, res) => {
         const result = await OrderService.updateOrder(req.params.id, { items, company });
         if (!result) return res.status(404).json({ message: "Order not found" });
         if (result.error) return res.status(400).json({ error: result.error });
+        const before = result.edits && result.edits.length ? result.edits[result.edits.length - 1].totalAmount : undefined;
+        await audit(req, "order.edit", result._id, `Memo ${result.voucher}: ${before} → ${result.totalAmount} taka`);
         res.json(result);
     } catch (error) {
         if (error.name === "CastError") return res.status(404).json({ message: "Order not found" });
@@ -109,10 +116,24 @@ exports.updateOrder = async (req, res) => {
     }
 };
 
+exports.restoreOrder = async (req, res) => {
+    try {
+        const order = await OrderService.restoreOrder(req.params.id);
+        if (!order) return res.status(404).json({ message: "No deleted order with this id" });
+        await audit(req, "order.restore", order._id, `Memo ${order.voucher}: #${order.customerID} ${order.name || ""}`);
+        res.json(order);
+    } catch (error) {
+        if (error.name === "CastError") return res.status(404).json({ message: "Order not found" });
+        console.error("Error restoring order:", error);
+        res.status(500).json({ error: "Failed to restore order" });
+    }
+};
+
 exports.deleteOrder = async (req, res) => {
     try {
-        const deletedOrder = await OrderService.deleteOrder(req.params.id);
+        const deletedOrder = await OrderService.deleteOrder(req.params.id, req.staff.name);
         if (deletedOrder) {
+            await audit(req, "order.delete", deletedOrder._id, `Memo ${deletedOrder.voucher}: #${deletedOrder.customerID} ${deletedOrder.name || ""}, ${deletedOrder.totalAmount} taka`);
             res.json({ message: "Order deleted successfully", order: deletedOrder });
         } else {
             res.status(404).json({ message: "Order not found" });

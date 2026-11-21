@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const userController = require("../controllers/userController");
+const { requireOwner } = require("../middleware/auth");
 const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
@@ -39,7 +40,8 @@ const upload = multer({
 router.get("/", userController.getUsers);
 router.post("/create", upload.single("image"), userController.createUser);
 router.put("/update/:id", upload.single("image"), userController.updateUser);
-router.delete("/delete/:id", userController.deleteUser);
+router.delete("/delete/:id", requireOwner, userController.deleteUser); // owner only; keeps the customer
+router.post("/:id/restore", requireOwner, userController.restoreUser);
 router.get("/lastCustomerID", userController.getLastCustomerID);
 router.get("/:customerID/profile", userController.getCustomerProfile);
 
