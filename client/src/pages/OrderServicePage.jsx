@@ -157,6 +157,8 @@ const OrderServicePage = ({
     const [customerInput, setCustomerInput] = useState("");
     const [itemInput, setItemInput] = useState("");
     const [saving, setSaving] = useState(false);
+    // "Paid now": empty = the full amount (BUGS U13).
+    const [paidInput, setPaidInput] = useState("");
     const [selectedCustomerId, setSelectedCustomerId] = useState("");
     const [selectedCompany, setSelectedCompany] = useState("");
     const [items, setItems] = useState([createItemState("")]);
@@ -401,6 +403,18 @@ const OrderServicePage = ({
             return;
         }
 
+        if (paidInput !== "") {
+            const paid = Number(paidInput);
+            if (!Number.isFinite(paid) || paid < 0) {
+                toast.warn("Paid now must be 0 or more.");
+                return;
+            }
+            if (paid > Math.round(totalAmount * 100) / 100) {
+                toast.warn(`Paid now (${paid}) can't be more than the total (${totalAmount.toFixed(2)}).`);
+                return;
+            }
+        }
+
         setSaving(true);
 
         const calculatedTotalAmount = totalAmount;
@@ -414,6 +428,7 @@ const OrderServicePage = ({
         payload.append("items", JSON.stringify(flattenItems(allItems).map(cleanItem)));
         payload.append("totalAmount", calculatedTotalAmount);
         // The memo number is given by the server (1000001, 1000002, ...).
+        if (paidInput !== "") payload.append("paidAmount", String(Number(paidInput)));
 
         try {
             const response = await axios.post(`${apiUrl}/orders`, payload, {
@@ -425,6 +440,7 @@ const OrderServicePage = ({
             setAddedItems([]);
             setItems([createItemState("")]);
             setTotalAmount(0);
+            setPaidInput("");
             setFormData((prevData) => ({ ...prevData, image: null }));
 
             const invoiceUrl = `/invoice/${response.data._id}`;
@@ -788,6 +804,35 @@ const OrderServicePage = ({
                                                     Total:
                                                 </td>
                                                 <td className="text-blue-600">{totalAmount.toFixed(2)}</td>
+                                                <td />
+                                            </tr>
+                                            <tr>
+                                                <td colSpan="5" className="text-right align-middle">
+                                                    <label htmlFor="paidNow">Paid now:</label>
+                                                </td>
+                                                <td>
+                                                    <input
+                                                        id="paidNow"
+                                                        type="number"
+                                                        min="0"
+                                                        step="any"
+                                                        value={paidInput}
+                                                        placeholder={totalAmount.toFixed(2)}
+                                                        onChange={(event) => setPaidInput(event.target.value)}
+                                                        onWheel={(event) => event.target.blur()}
+                                                        className="w-28 rounded border border-gray-300 px-2 py-1 text-right"
+                                                        aria-describedby="paidNowHelp"
+                                                    />
+                                                </td>
+                                                <td />
+                                            </tr>
+                                            <tr>
+                                                <td colSpan="5" className="text-right text-xs text-gray-500" id="paidNowHelp">
+                                                    {paidInput === "" ? "Empty = fully paid" : "Due (baki):"}
+                                                </td>
+                                                <td className={paidInput !== "" && Number(paidInput) < totalAmount ? "font-semibold text-red-700" : ""}>
+                                                    {paidInput === "" ? "" : Math.max(0, totalAmount - Number(paidInput || 0)).toFixed(2)}
+                                                </td>
                                                 <td />
                                             </tr>
                                         </tbody>

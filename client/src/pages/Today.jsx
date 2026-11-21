@@ -59,14 +59,24 @@ function Today() {
                     hint={summary ? `${summary.today.hallmark} hallmark · ${summary.today.xray} x-ray` : null}
                     loading={loading}
                 />
-                <StatBox label="Taka today" value={summary && taka(summary.today.amount)} loading={loading} />
+                <StatBox
+                    label="Taka today"
+                    value={summary && taka(summary.today.amount)}
+                    hint={summary ? `Cash received today ${taka(summary.cashToday)}` : null}
+                    loading={loading}
+                />
                 <StatBox
                     label={summary ? `Taka in ${formatMonth(summary.month)}` : "Taka this month"}
                     value={summary && taka(summary.thisMonth.amount)}
                     hint={summary ? `${summary.thisMonth.orders} orders` : null}
                     loading={loading}
                 />
-                <StatBox label="Customers" value={summary?.customers.toLocaleString("en-IN")} loading={loading} />
+                <StatBox
+                    label="Total due (baki)"
+                    value={summary && taka(summary.totalDue)}
+                    hint={summary ? `${summary.customersWithDue} customers owe · ${summary.customers.toLocaleString("en-IN")} customers` : null}
+                    loading={loading}
+                />
             </div>
 
             <Card

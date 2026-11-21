@@ -55,7 +55,12 @@ function OrderTable({ orders, showDate = true, onDelete, onRestore }) {
                                 <TypeBadge type={order.type} />
                             </td>
                             <td className="px-4 py-2.5 text-right tabular-nums">{pieces(order)}</td>
-                            <td className="px-4 py-2.5 text-right font-semibold tabular-nums text-gray-900">{taka(order.totalAmount)}</td>
+                            <td className="px-4 py-2.5 text-right font-semibold tabular-nums text-gray-900">
+                                {taka(order.totalAmount)}
+                                {order.paidAmount !== undefined && order.paidAmount !== null && order.totalAmount - order.paidAmount > 0 && (
+                                    <span className="block text-xs font-medium text-red-700">Due {taka(order.totalAmount - order.paidAmount)}</span>
+                                )}
+                            </td>
                             <td className="px-4 py-2.5">
                                 <div className="flex justify-end gap-2">
                                     <Button to={`/invoice/${order._id}`} target="_blank" rel="noreferrer" variant="secondary" size="sm">

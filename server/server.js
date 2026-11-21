@@ -12,6 +12,7 @@ const orderRoutes = require("./routes/orderRoutes");
 const itemRoutes = require("./routes/itemRoutes");
 const authRoutes = require("./routes/authRoutes");
 const staffRoutes = require("./routes/staffRoutes");
+const paymentRoutes = require("./routes/paymentRoutes");
 const { requireAuth, requireOwner } = require("./middleware/auth");
 
 const app = express();
@@ -38,7 +39,7 @@ connectDB()
 
 // Login (open). Everything after this needs a login (BUGS S1/S2).
 app.use("/auth", authRoutes);
-app.use("/users", requireAuth, userRoutes);
+app.use("/users", requireAuth, paymentRoutes, userRoutes);
 app.use("/orders", requireAuth, orderRoutes);
 app.use("/items", requireAuth, itemRoutes);
 app.use("/admin", requireAuth, requireOwner, staffRoutes); // owner only
