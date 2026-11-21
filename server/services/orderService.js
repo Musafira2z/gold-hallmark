@@ -4,6 +4,8 @@ const { dayRange } = require("./orderSummary");
 const { nextVoucher, syncVoucherCounter } = require("./memoNumber");
 const { normalizePhone } = require("../utils/phone");
 
+const round2 = (n) => Math.round(n * 100) / 100;
+
 const NOT_DELETED = { deletedAt: null }; // also matches records that never had the field
 
 exports.getAllOrders = async () => {
@@ -29,7 +31,6 @@ const cleanItems = (items) =>
     });
 exports.cleanItems = cleanItems;
 
-const round2 = (n) => Math.round(n * 100) / 100;
 const ITEM_TEXT_FIELDS = ["item", "weightUnite", "xray"];
 
 // Check and clean items for an edit. Returns { items, total } or { error }.
@@ -91,14 +92,31 @@ exports.createOrder = async (orderData, items, file) => { // Add items parameter
     const imagePath = file ? `/uploads/${file.filename}` : null; // Or your cloud storage logic
     // The server gives the memo number; anything the browser sent is ignored (BUGS D2).
     // eslint-disable-next-line no-unused-vars
-    const { voucher: _ignored, ...data } = orderData;
+    const { voucher: _ignored, paidAmount: paidRaw, ...data } = orderData;
+
+    // Amounts worked out here (quantity x rate), the same way as when editing an order.
+    const cleaned = cleanItems(items).map((it) =>
+        Number.isFinite(it.quantity) && Number.isFinite(it.rate) ? { ...it, amount: round2(it.quantity * it.rate) } : it
+    );
+    const total = round2(cleaned.reduce((sum, it) => sum + (Number(it.amount) || 0), 0));
+
+    // Paid now (BUGS U13): empty = the full amount, as before.
+    let paid = total;
+    if (paidRaw !== undefined && paidRaw !== null && String(paidRaw).trim() !== "") {
+        paid = Number(paidRaw);
+        if (!Number.isFinite(paid) || paid < 0) throw Object.assign(new Error("Paid amount must be 0 or more."), { status: 400 });
+        if (paid > total) throw Object.assign(new Error(`Paid (${paid}) can't be more than the total (${total}).`), { status: 400 });
+        paid = round2(paid);
+    }
     for (let attempt = 1; ; attempt += 1) {
         try {
             const newOrder = new Order({
                 ...data,
                 contact: normalizePhone(data.contact), // 1725275114 -> 01725275114
                 voucher: await nextVoucher(),
-                items: cleanItems(items), // numbers only; bad values become null
+                items: cleaned, // numbers only; bad values become null
+                totalAmount: total,
+                paidAmount: paid,
                 image: imagePath,
             });
             return await newOrder.save();

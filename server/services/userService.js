@@ -1,4 +1,5 @@
 const User = require("../models/User");
+const { customerBalance } = require("./balance");
 const { getCustomerStats } = require("./customerStats");
 
 exports.getAllUsers = async () => {
@@ -63,6 +64,6 @@ exports.getCustomerProfile = async (customerID) => {
     if (!Number.isSafeInteger(id)) return null;
     const customer = await User.findOne({ customerID: id }).lean();
     if (!customer) return null;
-    const stats = await getCustomerStats(id);
-    return { customer, stats };
+    const [stats, balance] = await Promise.all([getCustomerStats(id), customerBalance(id)]);
+    return { customer, stats, balance };
 };

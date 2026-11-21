@@ -3,6 +3,7 @@
 const Order = require("../models/Order");
 const User = require("../models/User");
 const { monthRange, monthKey } = require("./customerStats");
+const { allDues, cashBetween } = require("./balance");
 
 const TZ = "Asia/Dhaka";
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -40,7 +41,7 @@ const getSummary = async (now = new Date()) => {
     const month = monthRange(monthKey(now));
     const weekStart = dayRange(dayKey(now, -6)).start;
 
-    const [[result], customers] = await Promise.all([
+    const [[result], customers, dues, cashToday] = await Promise.all([
         Order.aggregate([
             { $match: { deletedAt: null, createdAt: { $gte: weekStart < month.start ? weekStart : month.start } } },
             {
@@ -61,6 +62,8 @@ const getSummary = async (now = new Date()) => {
             },
         ]),
         User.countDocuments({ deletedAt: null }),
+        allDues(),
+        cashBetween(today.start, today.end),
     ]);
 
     const empty = { orders: 0, amount: 0, hallmark: 0, xray: 0 };
@@ -84,6 +87,9 @@ const getSummary = async (now = new Date()) => {
         thisMonth: clean(result.month),
         lastSevenDays,
         customers,
+        cashToday,
+        totalDue: dues.totalDue,
+        customersWithDue: dues.customersWithDue,
     };
 };
 

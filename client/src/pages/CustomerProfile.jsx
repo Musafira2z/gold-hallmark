@@ -5,6 +5,7 @@ import PropTypes from "prop-types";
 import { apiUrl } from "../context/UserContext.jsx";
 import { formatContactForDisplay } from "../utils/formatContact.js";
 import UpdateUserModal from "../components/UpdateUserModal.jsx";
+import CustomerPayments from "../components/CustomerPayments.jsx";
 
 const TZ = "Asia/Dhaka";
 const PAGE_SIZE = 50;
@@ -134,7 +135,7 @@ const CustomerProfile = () => {
             <div className="bg-white rounded-xl border border-gray-200 p-8 text-center">
                 <p className="text-lg font-semibold text-gray-800">Customer #{customerID} not found</p>
                 <Link to="/add-customer" className="text-blue-700 hover:underline mt-2 inline-block">
-                    Customer list e ferot jan
+                    Back to the customer list
                 </Link>
             </div>
         );
@@ -236,6 +237,8 @@ const CustomerProfile = () => {
                     sub={`${stats.lifetime.orders} orders${since ? ` · since ${monthName(new Date(since).toISOString().slice(0, 7), "short")}` : ""}`}
                 />
             </div>
+
+            <CustomerPayments customerID={customerID} balance={profile.balance} />
 
             <div className="grid grid-cols-1 xl:grid-cols-3 gap-5">
                 {/* Order history */}
@@ -387,7 +390,7 @@ const CustomerProfile = () => {
                         </div>
                         <p className="text-xs text-gray-500 mt-3">
                             Bars show number of orders.
-                            {busiest.orders > 0 && ` ${monthShort(busiest.month)} e shobcheye beshi (${busiest.orders}).`}
+                            {busiest.orders > 0 && ` ${monthShort(busiest.month)} was the busiest (${busiest.orders}).`}
                         </p>
                     </div>
 

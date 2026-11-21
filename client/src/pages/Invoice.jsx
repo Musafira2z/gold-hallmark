@@ -13,9 +13,13 @@ const memoTime = (value) =>
 // Delivery date is stored as a calendar day (midnight UTC), so read it as UTC.
 const deliveryDay = (value) => new Date(value).toLocaleDateString("en-GB", { timeZone: "UTC" });
 const MEMO_TITLE = { hallmark: "Hallmark Cash Memo", xray: "X-ray Cash Memo" };
+// Old orders have no paidAmount: their memo always said fully paid.
+const paidOf = (order) => (order.paidAmount === undefined || order.paidAmount === null ? order.totalAmount : order.paidAmount);
+const money = (n) => Number(n || 0).toLocaleString("en-IN", { maximumFractionDigits: 2 });
 const Invoice = () => {
     const { id } = useParams(); // Get the order ID from the URL
     const [order, setOrder] = useState(null);
+    const [balance, setBalance] = useState(null);
     const didPrint = useRef(false);
 
     useEffect(() => {
@@ -23,6 +27,12 @@ const Invoice = () => {
             try {
                 const response = await axios.get(`${apiUrl}/orders/${id}`);
                 setOrder(response.data); // Update the order state
+                // Customer's total dues, printed under this memo's own numbers.
+                if (response.data?.customerID) {
+                    axios.get(`${apiUrl}/users/${response.data.customerID}/balance`)
+                        .then((b) => setBalance(b.data))
+                        .catch(() => setBalance(null));
+                }
 
                 // Add this condition check before the print operation
                 if (!didPrint.current) {
@@ -173,8 +183,16 @@ const Invoice = () => {
                             <span className="text-sm font-normal">Total Amount:</span> {order.totalAmount} BDT
                         </p>
                         <p className="text-sm font-bold">
-                            <span className="text-sm font-normal">Paid Amount:</span> {order.totalAmount} BDT
+                            <span className="text-sm font-normal">Paid Amount:</span> {money(paidOf(order))} BDT
                         </p>
+                        {order.totalAmount - paidOf(order) > 0 && (
+                            <p className="text-sm font-bold">
+                                <span className="text-sm font-normal">Due:</span> {money(order.totalAmount - paidOf(order))} BDT
+                            </p>
+                        )}
+                        {balance && balance.due > 0 && (
+                            <p className="text-xs">Customer&apos;s total due (all memos): {money(balance.due)} BDT</p>
+                        )}
                         {order.editedAt && (
                             <p className="text-xs text-gray-600">Edited {memoDate(order.editedAt)}</p>
                         )}

@@ -20,6 +20,8 @@ const orderSchema = new mongoose.Schema({
     type: String,
     voucher: Number,
     totalAmount: Number, // Use totalAmount to avoid confusion
+    // Paid when the order was taken (BUGS U13). Missing on old orders = fully paid.
+    paidAmount: Number,
     customerFrom: Date,
     image: String,
     // Order edits (BUGS F1): when it was last edited, and what it looked like before each edit.
