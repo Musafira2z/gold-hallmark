@@ -2,44 +2,11 @@ const express = require("express");
 const router = express.Router();
 const userController = require("../controllers/userController");
 const { requireOwner } = require("../middleware/auth");
-const multer = require("multer");
-const path = require("path");
-const fs = require("fs");
-
-const uploadsDir = path.join(__dirname, "..", "uploads");
-if (!fs.existsSync(uploadsDir)) {
-    fs.mkdirSync(uploadsDir, { recursive: true });
-}
-
-const storage = multer.diskStorage({
-    destination: (_req, _file, cb) => {
-        cb(null, uploadsDir);
-    },
-    filename: (_req, file, cb) => {
-        const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
-        const extension = path.extname(file.originalname) || "";
-        cb(null, `${file.fieldname}-${uniqueSuffix}${extension}`);
-    }
-});
-
-const fileFilter = (_req, file, cb) => {
-    if (!file.mimetype.startsWith("image/")) {
-        return cb(new Error("Only image files are allowed"), false);
-    }
-    cb(null, true);
-};
-
-const upload = multer({
-    storage,
-    fileFilter,
-    limits: {
-        fileSize: 5 * 1024 * 1024 // 5MB
-    }
-});
+const { uploadImage } = require("../middleware/upload");
 
 router.get("/", userController.getUsers);
-router.post("/create", upload.single("image"), userController.createUser);
-router.put("/update/:id", upload.single("image"), userController.updateUser);
+router.post("/create", uploadImage, userController.createUser);
+router.put("/update/:id", uploadImage, userController.updateUser);
 router.delete("/delete/:id", requireOwner, userController.deleteUser); // owner only; keeps the customer
 router.post("/:id/restore", requireOwner, userController.restoreUser);
 router.get("/lastCustomerID", userController.getLastCustomerID);

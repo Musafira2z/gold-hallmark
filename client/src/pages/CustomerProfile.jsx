@@ -6,6 +6,7 @@ import { apiUrl } from "../context/UserContext.jsx";
 import { formatContactForDisplay } from "../utils/formatContact.js";
 import UpdateUserModal from "../components/UpdateUserModal.jsx";
 import CustomerPayments from "../components/CustomerPayments.jsx";
+import AuthImage from "../components/AuthImage.jsx";
 
 const TZ = "Asia/Dhaka";
 const PAGE_SIZE = 50;
@@ -38,13 +39,6 @@ const lastVisitText = (d) => {
     if (n === 0) return "Last visit: today";
     if (n === 1) return "Last visit: yesterday";
     return `Last visit: ${n} days ago`;
-};
-
-const imageUrl = (image) => {
-    const path = typeof image === "string" ? image.trim() : "";
-    if (!path) return null;
-    if (/^https?:\/\//i.test(path)) return path;
-    return `${apiUrl.replace(/\/$/, "")}${path.startsWith("/") ? path : `/${path}`}`;
 };
 
 const initials = (name = "") =>
@@ -153,7 +147,6 @@ const CustomerProfile = () => {
     }
 
     const { customer, stats } = profile;
-    const photo = imageUrl(customer.image);
     const since = [customer.createdAt, stats.lifetime.firstOrder].filter(Boolean).sort()[0];
     const maxBar = Math.max(1, ...stats.lastSixMonths.map((m) => m.orders));
     const busiest = stats.lastSixMonths.reduce((a, b) => (b.orders > a.orders ? b : a), stats.lastSixMonths[0]);
@@ -175,13 +168,16 @@ const CustomerProfile = () => {
             {/* Customer header */}
             <div className="bg-white rounded-xl border border-gray-200 p-5 flex flex-col lg:flex-row lg:items-center gap-5">
                 <div className="flex items-center gap-4 flex-1 min-w-0">
-                    {photo ? (
-                        <img src={photo} alt="" className="w-16 h-16 rounded-full object-cover border border-gray-200" />
-                    ) : (
-                        <div className="w-16 h-16 rounded-full bg-blue-100 text-blue-800 flex items-center justify-center text-xl font-bold">
-                            {initials(customer.name)}
-                        </div>
-                    )}
+                    <AuthImage
+                        image={customer.image}
+                        alt=""
+                        className="w-16 h-16 rounded-full object-cover border border-gray-200"
+                        fallback={
+                            <div className="w-16 h-16 rounded-full bg-blue-100 text-blue-800 flex items-center justify-center text-xl font-bold">
+                                {initials(customer.name)}
+                            </div>
+                        }
+                    />
                     <div className="min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
                             <h1 className="text-2xl font-bold text-gray-900">{customer.name}</h1>

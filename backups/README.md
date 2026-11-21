@@ -46,6 +46,12 @@ docker compose run --rm backup restore goldhallmark-20261119-1430.gz
 - Restore er **age ekhonkar data r ekta safety copy** nibe (`...-before-restore.gz`). Bhul restore holeo oita diye ferot ana jabe.
 - Mac e eta o cholbe: `./scripts/restore-backup.sh`
 
+## Photo (customer ar memo r chhobi)
+
+- App er chhobi thake `gold-hallmark/uploads` folder e.
+- Proti backup er por notun chhobi gulo `backups/photos/` e copy hoy. Kono chhobi muchha hoy na.
+- Chhobi harale: `backups/photos/` er file gulo `uploads/` folder e copy kore din. Database restore er sathe eta alada.
+
 ## PC er baire copy (Google Drive)
 
 Google Drive app PC te thakle, `gold-hallmark` folder e `.env` namer file e ei line ta likhun (path ta apnar Drive folder er):

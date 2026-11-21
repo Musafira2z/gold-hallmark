@@ -1,6 +1,8 @@
 client/node_modules
 server/node_modules
 server/uploads
+# Customer and memo photos (client data - never commit)
+uploads/
 
 # macOS files
 .DS_Store

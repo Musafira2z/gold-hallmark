@@ -6,6 +6,7 @@ import axios from "axios";
 import { Bounce, toast } from "react-toastify";
 import {apiUrl} from "../context/UserContext.jsx";
 import UpdateUserModal from "./UpdateUserModal.jsx";
+import AuthImage from "./AuthImage.jsx";
 import { formatContactForDisplay } from "../utils/formatContact.js";
 import { searchCustomers } from "../utils/customerSearch.js";
 import { useAuth } from "../context/AuthContext.jsx";
@@ -120,13 +121,7 @@ export function CustomerDetailTable({ customers, onRemoveCustomer }) {
                             </tr>
                         ) : (
                             visible.map(({ _id, customerID, name, contact, image, address }) => {
-                                const normalizedApiUrl = apiUrl?.endsWith("/") ? apiUrl.slice(0, -1) : apiUrl;
-                                const imagePath = typeof image === "string" ? image.trim() : "";
-                                const isAbsoluteUrl = /^https?:\/\//i.test(imagePath);
-                                const relativePath = imagePath.startsWith("/") ? imagePath : `/${imagePath}`;
-                                const imageSrc = imagePath
-                                    ? (isAbsoluteUrl ? imagePath : `${normalizedApiUrl}${relativePath}`)
-                                    : imageDefault;
+                                const photoClass = "w-12 h-12 rounded-full object-cover border-2 border-gray-200 group-hover:border-blue-400 transition-colors shadow-sm";
 
                                 return (
                                     <tr 
@@ -136,10 +131,11 @@ export function CustomerDetailTable({ customers, onRemoveCustomer }) {
                                         <td className="px-6 py-4">
                                             <div className="flex items-center gap-4">
                                                 <div className="relative">
-                                                    <img 
-                                                        className="w-12 h-12 rounded-full object-cover border-2 border-gray-200 group-hover:border-blue-400 transition-colors shadow-sm" 
-                                                        src={imageSrc} 
-                                                        alt={`Customer ${name}`} 
+                                                    <AuthImage
+                                                        image={image}
+                                                        className={photoClass}
+                                                        alt={`Customer ${name}`}
+                                                        fallback={<img className={photoClass} src={imageDefault} alt="" />}
                                                     />
                                                     <span className="absolute -top-1 -right-1 bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-xs font-bold px-2 py-0.5 rounded-full shadow-sm">
                                                         #{customerID}
