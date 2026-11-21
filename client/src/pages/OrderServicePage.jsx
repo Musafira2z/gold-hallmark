@@ -11,6 +11,7 @@ import { apiUrl, UserContext } from "../context/UserContext.jsx";
 import useItemNames from "../hooks/useItemNames.js";
 import { formatContactForDisplay } from "../utils/formatContact.js";
 import { companyText } from "../utils/customerSearch.js";
+import { openMemoTab, memoUrl } from "../utils/memoTab.js";
 
 const MAX_CUSTOMER_OPTIONS = 50;
 
@@ -157,6 +158,8 @@ const OrderServicePage = ({
     const [customerInput, setCustomerInput] = useState("");
     const [itemInput, setItemInput] = useState("");
     const [saving, setSaving] = useState(false);
+    // Last saved memo: reprint link, and the way out when the browser blocks the tab (BUGS F6).
+    const [lastMemo, setLastMemo] = useState(null);
     // "Paid now": empty = the full amount (BUGS U13).
     const [paidInput, setPaidInput] = useState("");
     const [selectedCustomerId, setSelectedCustomerId] = useState("");
@@ -415,6 +418,8 @@ const OrderServicePage = ({
             }
         }
 
+        // Open the memo tab now, inside the click, so it isn't blocked (BUGS F6).
+        const memoTab = openMemoTab();
         setSaving(true);
 
         const calculatedTotalAmount = totalAmount;
@@ -443,14 +448,12 @@ const OrderServicePage = ({
             setPaidInput("");
             setFormData((prevData) => ({ ...prevData, image: null }));
 
-            const invoiceUrl = `/invoice/${response.data._id}`;
-            const newTab = window.open(invoiceUrl, "_blank");
-            if (!newTab) {
-                alert("Failed to open new tab. Please allow popups for this site.");
-            }
+            const opened = memoTab.show(response.data._id);
+            setLastMemo({ id: response.data._id, voucher: response.data.voucher, blocked: !opened });
             toast.success("Order saved.");
             focusItemName(0);
         } catch (error) {
+            memoTab.cancel();
             console.error("Error uploading data:", error);
             toast.error("Order was NOT saved. Please try again.");
         } finally {
@@ -549,6 +552,29 @@ const OrderServicePage = ({
                         <kbd className="rounded border border-gray-300 bg-gray-50 px-1">Enter</kbd> Submit &amp; Print
                     </p>
                 </div>
+                {lastMemo && (lastMemo.blocked ? (
+                    <div role="alert" className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-amber-900">
+                        <span>
+                            <strong>Memo {lastMemo.voucher ?? ""} saved</strong> — the browser blocked the new tab.
+                        </span>
+                        <button
+                            type="button"
+                            onClick={() => {
+                                if (window.open(memoUrl(lastMemo.id), "_blank")) setLastMemo({ ...lastMemo, blocked: false });
+                            }}
+                            className="rounded-lg bg-amber-600 px-4 py-2 font-semibold text-white hover:bg-amber-700"
+                        >
+                            Print memo
+                        </button>
+                    </div>
+                ) : (
+                    <p className="mb-4 text-sm text-gray-600">
+                        Last memo {lastMemo.voucher ?? ""} ·{" "}
+                        <a href={memoUrl(lastMemo.id)} target="_blank" rel="noreferrer" className="font-semibold text-blue-700 hover:underline">
+                            Print again
+                        </a>
+                    </p>
+                ))}
                 <form ref={formRef} onSubmit={handleSubmit} onKeyDown={handleFormKeyDown}>
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                         <div className="card-modern bg-gradient-to-br from-gray-50 to-white">

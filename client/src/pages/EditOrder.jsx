@@ -6,6 +6,7 @@ import { apiUrl, UserContext } from "../context/UserContext.jsx";
 import useItemNames from "../hooks/useItemNames.js";
 import { Button, Card, ErrorBox, Loading, PageHeader, TypeBadge } from "../components/ui/index.jsx";
 import { formatDay, formatTime, taka } from "../utils/format.js";
+import { openMemoTab } from "../utils/memoTab.js";
 
 const UNITS = ["gm", "ana", "point", "vori/tola"];
 const isNumberLike = (text) => /^\s*\d+([.,]\d+)?\s*$/.test(text || "");
@@ -100,6 +101,8 @@ function EditOrder() {
             focusCell(problem.index, problem.field);
             return;
         }
+        // Open the memo tab inside the click so it isn't blocked (BUGS F6).
+        const memoTab = print ? openMemoTab() : null;
         setSaving(true);
         try {
             const res = await axios.put(`${apiUrl}/orders/${id}`, {
@@ -114,9 +117,12 @@ function EditOrder() {
                 })),
             });
             toast.success(`Memo ${res.data.voucher ?? ""} updated. Total ${taka(res.data.totalAmount)}.`);
-            if (print) window.open(`/invoice/${id}`, "_blank");
+            if (memoTab && !memoTab.show(id)) {
+                toast.warn("The browser blocked the memo tab. Use the Memo button in the list to print.");
+            }
             navigate(-1);
         } catch (err) {
+            memoTab?.cancel();
             console.error("Error updating order:", err);
             toast.error(err.response?.data?.error || "Order was NOT updated. Please try again.");
         } finally {
