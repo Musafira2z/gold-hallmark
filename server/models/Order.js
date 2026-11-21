@@ -14,7 +14,7 @@ const orderSchema = new mongoose.Schema({
     name: String,
     customerID: String,
     company: String,
-    contact: Number,
+    contact: String, // text, so the leading 0 is kept (was Number: BUGS D1)
     address: String,
     items: [itemSchema], // Array of item subdocuments
     type: String,

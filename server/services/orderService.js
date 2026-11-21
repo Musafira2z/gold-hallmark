@@ -2,6 +2,7 @@ const Order = require("../models/Order");
 const { monthRange } = require("./customerStats");
 const { dayRange } = require("./orderSummary");
 const { nextVoucher, syncVoucherCounter } = require("./memoNumber");
+const { normalizePhone } = require("../utils/phone");
 
 exports.getAllOrders = async () => {
     return await Order.find({});
@@ -92,6 +93,7 @@ exports.createOrder = async (orderData, items, file) => { // Add items parameter
         try {
             const newOrder = new Order({
                 ...data,
+                contact: normalizePhone(data.contact), // 1725275114 -> 01725275114
                 voucher: await nextVoucher(),
                 items: cleanItems(items), // numbers only; bad values become null
                 image: imagePath,
@@ -160,7 +162,13 @@ exports.queryOrders = async ({ customerID, month, day, company, type, q, page = 
             // Memo number, customer ID, or phone (stored without the leading 0).
             const or = [{ voucher: Number(text) }, { customerID: text }];
             const phone = text.replace(/^0+/, "");
-            if (phone.length >= 6) or.push({ contact: Number(phone) });
+            // Phones are text with the leading 0 now; older records may still be numbers.
+            // Mongoose turns a plain number into text before searching, so a number
+            // match is done by comparing the stored value as text instead.
+            if (phone.length >= 6) {
+                or.push({ contact: { $in: [`0${phone}`, phone] } });
+                or.push({ $expr: { $eq: [{ $toString: "$contact" }, phone] } });
+            }
             query.$or = or;
         } else {
             const pattern = new RegExp(escapeRegex(text), "i");
