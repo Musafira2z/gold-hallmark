@@ -24,6 +24,9 @@ const orderSchema = new mongoose.Schema({
     image: String,
     // Order edits (BUGS F1): when it was last edited, and what it looked like before each edit.
     editedAt: Date,
+    // "Deleted" orders stay in the database (BUGS U7): hidden from lists and totals.
+    deletedAt: Date,
+    deletedBy: String,
     edits: [{
         _id: false,
         at: Date,

@@ -45,7 +45,7 @@ exports.getCustomerStats = async (customerID, now = new Date()) => {
     const lastMonth = monthKey(now, -1);
 
     const [result] = await Order.aggregate([
-        { $match: { customerID: id } },
+        { $match: { customerID: id, deletedAt: null } },
         {
             $addFields: {
                 _month: { $dateToString: { format: "%Y-%m", date: "$createdAt", timezone: TZ } },

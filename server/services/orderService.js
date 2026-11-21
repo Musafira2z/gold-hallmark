@@ -4,8 +4,10 @@ const { dayRange } = require("./orderSummary");
 const { nextVoucher, syncVoucherCounter } = require("./memoNumber");
 const { normalizePhone } = require("../utils/phone");
 
+const NOT_DELETED = { deletedAt: null }; // also matches records that never had the field
+
 exports.getAllOrders = async () => {
-    return await Order.find({});
+    return await Order.find(NOT_DELETED);
 };
 
 // Number fields of an item: anything that is not a number (e.g. "" or the
@@ -65,6 +67,7 @@ const prepareEditedItems = (rawItems) => {
 exports.updateOrder = async (id, { items, company }) => {
     const order = await Order.findById(id);
     if (!order) return null;
+    if (order.deletedAt) return { error: "This order is deleted. Restore it first." };
     const prepared = prepareEditedItems(items);
     if (prepared.error) return { error: prepared.error };
     if (company !== undefined && typeof company !== "string") return { error: "Invalid shop." };
@@ -117,6 +120,7 @@ exports.getOrderById = async (id) => {
 exports.getOrdersByDate = async (startDate, endDate) => {
     try {
         const orders = await Order.find({
+            ...NOT_DELETED,
             createdAt: { $gte: startDate, $lte: endDate }
         });
         
@@ -128,23 +132,31 @@ exports.getOrdersByDate = async (startDate, endDate) => {
     }
 };
 
-exports.deleteOrder = async (id) => {
+// "Delete" keeps the order (BUGS U7); it is hidden everywhere and the owner can restore it.
+exports.deleteOrder = async (id, byName) => {
     try {
-        const deletedOrder = await Order.findByIdAndDelete(id);
-        return deletedOrder;
+        return await Order.findOneAndUpdate(
+            { _id: id, ...NOT_DELETED },
+            { $set: { deletedAt: new Date(), deletedBy: byName } },
+            { new: true }
+        );
     } catch (error) {
         console.error("Error deleting order:", error);
         throw new Error('Error deleting order');
     }
 };
 
+exports.restoreOrder = async (id) =>
+    Order.findOneAndUpdate({ _id: id, deletedAt: { $ne: null } }, { $unset: { deletedAt: 1, deletedBy: 1 } }, { new: true });
+
 // Filtered, paged order list (newest first). Used by the customer profile
 // and the Orders page. Any filter can be left out.
 // Returns { orders, total, amount, page, pages, limit }.
 const escapeRegex = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
-exports.queryOrders = async ({ customerID, month, day, company, type, q, page = 1, limit = 50 }) => {
-    const query = {};
+exports.queryOrders = async ({ customerID, month, day, company, type, q, deleted, page = 1, limit = 50 }) => {
+    // deleted: "only" = just the deleted ones (owner); otherwise deleted ones are left out.
+    const query = deleted === "only" ? { deletedAt: { $ne: null } } : { ...NOT_DELETED };
     if (customerID !== undefined) query.customerID = String(customerID);
     if (company !== undefined) query.company = company;
     if (type !== undefined) query.type = type;

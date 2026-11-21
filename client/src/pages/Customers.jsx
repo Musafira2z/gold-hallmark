@@ -5,6 +5,8 @@ import CustomerInfoForm from "../components/CustomerInfoForm";
 import { CustomerDetailTable } from "../components/CustomerDetailTable";
 import { UserContext } from "../context/UserContext.jsx";
 import { Button, PageHeader } from "../components/ui/index.jsx";
+import DeletedCustomers from "../components/DeletedCustomers.jsx";
+import { useAuth } from "../context/AuthContext.jsx";
 
 // Customer list with search. "New customer" opens the add form above the list;
 // after saving, staff land on the new customer's page, ready to take an order.
@@ -13,6 +15,7 @@ function Customers() {
     const [params, setParams] = useSearchParams();
     const navigate = useNavigate();
     const showForm = params.get("new") === "1";
+    const { isOwner } = useAuth();
 
     const setShowForm = (show) => setParams(show ? { new: "1" } : {}, { replace: true });
 
@@ -43,6 +46,7 @@ function Customers() {
             />
             {showForm && <CustomerInfoForm customers={customers} onAddCustomer={onAddCustomer} />}
             <CustomerDetailTable customers={customers} onRemoveCustomer={removeCustomer} />
+            {isOwner && <DeletedCustomers />}
         </div>
     );
 }

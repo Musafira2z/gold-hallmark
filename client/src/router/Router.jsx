@@ -9,6 +9,10 @@ import Hallmark from "../pages/Hallmark";
 import Invoice from "../pages/Invoice";
 import CustomerProfile from "../pages/CustomerProfile";
 import EditOrder from "../pages/EditOrder";
+import Staff from "../pages/Staff";
+import Activity from "../pages/Activity";
+import ChangePassword from "../pages/ChangePassword";
+import { OwnerOnly } from "../components/AuthGate";
 
 const router = createBrowserRouter([
     {
@@ -24,6 +28,9 @@ const router = createBrowserRouter([
             { path: "/xray", element: <XRay /> },
             { path: "/updateuser/:id", element: <UpdateUser /> },
             { path: "/invoice/:id", element: <Invoice /> },
+            { path: "/staff", element: <OwnerOnly><Staff /></OwnerOnly> },
+            { path: "/activity", element: <OwnerOnly><Activity /></OwnerOnly> },
+            { path: "/account/password", element: <ChangePassword /> },
             // Old links keep working (bookmarks, staff habit).
             { path: "/add-customer", element: <Navigate to="/customers" replace /> },
             { path: "/account", element: <Navigate to="/" replace /> },

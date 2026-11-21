@@ -2,7 +2,7 @@ const User = require("../models/User");
 const { getCustomerStats } = require("./customerStats");
 
 exports.getAllUsers = async () => {
-    return await User.find({});
+    return await User.find({ deletedAt: null });
 };
 
 exports.createUser = async (userData, file) => {
@@ -42,9 +42,15 @@ exports.updateUser = async (id, updatedData) => {
     return User.findByIdAndUpdate(id, updatedData, { new: true });
 };
 
-exports.deleteUser = async (id) => {
-    return User.findByIdAndDelete(id);
-};
+// "Delete" keeps the customer (BUGS U7). Their ID is never given to anyone else,
+// because getLastCustomerID still counts deleted customers.
+exports.deleteUser = async (id, byName) =>
+    User.findOneAndUpdate({ _id: id, deletedAt: null }, { $set: { deletedAt: new Date(), deletedBy: byName } }, { new: true });
+
+exports.getDeletedUsers = async () => User.find({ deletedAt: { $ne: null } }).sort({ deletedAt: -1 });
+
+exports.restoreUser = async (id) =>
+    User.findOneAndUpdate({ _id: id, deletedAt: { $ne: null } }, { $unset: { deletedAt: 1, deletedBy: 1 } }, { new: true });
 
 exports.getLastCustomerID = async () => {
     const lastCustomer = await User.findOne().sort({ customerID: -1 }).limit(1);

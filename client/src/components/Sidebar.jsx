@@ -1,5 +1,6 @@
 import { NavLink } from "react-router-dom";
-import { HomeIcon, PlusCircleIcon, UserGroupIcon, DocumentTextIcon } from "@heroicons/react/24/outline";
+import { HomeIcon, PlusCircleIcon, UserGroupIcon, DocumentTextIcon, KeyIcon, ClockIcon } from "@heroicons/react/24/outline";
+import { useAuth } from "../context/AuthContext.jsx";
 
 // Five plain links, no dropdowns. On small screens only the icons show.
 const LINKS = [
@@ -9,12 +10,19 @@ const LINKS = [
     { to: "/customers", label: "Customers", icon: UserGroupIcon },
     { to: "/orders", label: "Orders", icon: DocumentTextIcon },
 ];
+// Owner only.
+const OWNER_LINKS = [
+    { to: "/staff", label: "Staff", icon: KeyIcon },
+    { to: "/activity", label: "Activity", icon: ClockIcon },
+];
 
 function Sidebar() {
+    const { isOwner } = useAuth();
+    const links = isOwner ? [...LINKS, ...OWNER_LINKS] : LINKS;
     return (
         <nav aria-label="Main" className="w-16 lg:w-52 flex-shrink-0 bg-white border-r border-gray-200 overflow-y-auto">
             <ul className="p-2 space-y-1">
-                {LINKS.map(({ to, label, icon: Icon, end, accent }) => (
+                {links.map(({ to, label, icon: Icon, end, accent }) => (
                     <li key={to}>
                         <NavLink
                             to={to}

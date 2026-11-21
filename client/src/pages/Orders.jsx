@@ -3,6 +3,7 @@ import { useSearchParams } from "react-router-dom";
 import axios from "axios";
 import { toast } from "react-toastify";
 import { apiUrl } from "../context/UserContext.jsx";
+import { useAuth } from "../context/AuthContext.jsx";
 import { Button, Card, EmptyState, ErrorBox, Loading, PageHeader, Pager } from "../components/ui/index.jsx";
 import OrderTable from "../components/OrderTable.jsx";
 import { dhakaMonth, dhakaToday, formatDay, formatMonth, taka } from "../utils/format.js";
@@ -14,6 +15,8 @@ const PAGE_SIZE = 50;
 // the browser Back button keeps them. ?day=today means today in Dhaka.
 function Orders() {
     const [params, setParams] = useSearchParams();
+    const { isOwner } = useAuth();
+    const showDeleted = isOwner && params.get("deleted") === "only";
     const dayParam = params.get("day");
     const day = dayParam === "today" ? dhakaToday() : dayParam || "";
     const month = params.get("month") || "";
@@ -52,6 +55,7 @@ function Orders() {
             else if (month) query.month = month;
             if (type) query.type = type;
             if (q) query.q = q;
+            if (showDeleted) query.deleted = "only";
             const res = await axios.get(`${apiUrl}/orders`, { params: query });
             setData(res.data);
         } catch (err) {
@@ -60,7 +64,7 @@ function Orders() {
         } finally {
             setLoading(false);
         }
-    }, [day, month, type, q, page]);
+    }, [day, month, type, q, page, showDeleted]);
 
     useEffect(() => {
         load();
@@ -68,7 +72,7 @@ function Orders() {
 
     const handleDelete = async (order) => {
         const label = `memo ${order.voucher ?? ""} for ${order.name || "this customer"}`;
-        if (!window.confirm(`Delete ${label}?\n\nThis cannot be undone.`)) return;
+        if (!window.confirm(`Delete ${label}?\n\nIt leaves all lists and totals. You can bring it back from "Deleted".`)) return;
         try {
             await axios.delete(`${apiUrl}/orders/${order._id}`);
             toast.success(`Deleted ${label}`);
@@ -76,6 +80,16 @@ function Orders() {
         } catch (err) {
             console.error("Error deleting order:", err);
             toast.error("Delete failed. Nothing was removed.");
+        }
+    };
+
+    const handleRestore = async (order) => {
+        try {
+            await axios.post(`${apiUrl}/orders/${order._id}/restore`);
+            toast.success(`Memo ${order.voucher ?? ""} is back.`);
+            load();
+        } catch (err) {
+            toast.error(err.response?.data?.message || err.response?.data?.error || "Restore failed.");
         }
     };
 
@@ -122,6 +136,11 @@ function Orders() {
                         <option value="hallmark">Hallmark only</option>
                         <option value="xray">X-ray only</option>
                     </select>
+                    {isOwner && (
+                        <button type="button" className={`${chip(showDeleted)} ml-auto`} onClick={() => update({ deleted: showDeleted ? "" : "only" })}>
+                            {showDeleted ? "← Back to orders" : "Deleted"}
+                        </button>
+                    )}
                 </div>
                 <input
                     type="search"
@@ -139,6 +158,7 @@ function Orders() {
                 title={
                     data ? (
                         <span>
+                            {showDeleted && <span className="text-red-700">Deleted · </span>}
                             {periodText}: {data.total.toLocaleString("en-IN")} orders ·{" "}
                             <span className="text-gray-900">{taka(data.amount)}</span>
                         </span>
@@ -152,7 +172,7 @@ function Orders() {
                     <Loading />
                 ) : data && data.orders.length > 0 ? (
                     <div className={loading ? "opacity-50" : ""}>
-                        <OrderTable orders={data.orders} showDate={!day} onDelete={handleDelete} />
+                        <OrderTable orders={data.orders} showDate={!day} onDelete={isOwner ? handleDelete : undefined} onRestore={isOwner ? handleRestore : undefined} />
                         <Pager page={data.page} pages={data.pages} onChange={(p) => update({ page: String(p) })} />
                     </div>
                 ) : (

@@ -95,6 +95,11 @@ const Invoice = () => {
     }
     return (
         <div className="bg-[#E0F2F1] h-[100vh] pt-20 print-content">
+            {order.deletedAt && (
+                <p className="mx-auto max-w-6xl rounded border-2 border-red-600 py-1 text-center text-lg font-bold text-red-700">
+                    DELETED {memoDate(order.deletedAt)}{order.deletedBy ? ` by ${order.deletedBy}` : ""}
+                </p>
+            )}
             <h2 className="text-center pt-5 font-semibold text-xl -ml-3">{MEMO_TITLE[order.type] || "Cash Memo"}</h2>
             <div className="bg-white px-20 rounded-lg mt-2 max-w-6xl mx-auto">
                 <div className="grid grid-cols-3 gap-2 items-start mb-1">
