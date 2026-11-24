@@ -7,6 +7,8 @@ const { ensureDefaultItems } = require("./services/itemService");
 const { syncVoucherCounter } = require("./services/memoNumber");
 const { ensureReportLinks } = require("./services/reportLink");
 const { ensureItemPurity } = require("./services/orderService");
+const { ensureShops } = require("./services/shopService");
+const shopRoutes = require("./routes/shopRoutes");
 const { startSync, syncStatus } = require("./services/sync");
 
 const userRoutes = require("./routes/userRoutes");
@@ -38,6 +40,8 @@ connectDB()
         console.log("Memo number counter is ready.");
         const parsed = await ensureItemPurity();
         if (parsed) console.log(`Purity read for ${parsed} older orders.`);
+        const shops = await ensureShops();
+        if (shops.orders) console.log(`Shops ready: ${shops.created} shop records, ${shops.orders} orders linked.`);
         const linked = await ensureReportLinks();
         console.log(`Report links ready${linked ? ` (${linked} older orders got one)` : ""}.`);
         startSync();
@@ -52,6 +56,7 @@ app.use("/auth", authRoutes);
 app.use("/users", requireAuth, paymentRoutes, userRoutes);
 app.use("/orders", requireAuth, orderRoutes);
 app.use("/items", requireAuth, itemRoutes);
+app.use("/shops", requireAuth, shopRoutes);
 app.use("/admin", requireAuth, requireOwner, staffRoutes); // owner only
 app.get("/sync/status", requireAuth, async (_req, res) => {
     try {

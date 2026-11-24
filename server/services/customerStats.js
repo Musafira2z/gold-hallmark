@@ -2,6 +2,7 @@
 // The shop is in Bangladesh (UTC+6, no daylight saving), so "this month"
 // and day boundaries are counted in Asia/Dhaka time, not server time.
 const Order = require("../models/Order");
+const Shop = require("../models/Shop");
 
 const TZ = "Asia/Dhaka";
 const TZ_OFFSET = "+06:00";
@@ -79,7 +80,7 @@ exports.getCustomerStats = async (customerID, now = new Date()) => {
                     { $sort: { _id: -1 } },
                 ],
                 companies: [
-                    { $group: { _id: { $ifNull: ["$company", ""] }, orders: { $sum: 1 } } },
+                    { $group: { _id: { $ifNull: ["$shopId", null] }, orders: { $sum: 1 } } },
                     { $sort: { orders: -1, _id: 1 } },
                 ],
                 topItems: [
@@ -98,6 +99,9 @@ exports.getCustomerStats = async (customerID, now = new Date()) => {
         },
     ]);
 
+    // Shop names from the shop records (different spellings of one shop count once).
+    const shopIds = result.companies.map((c) => c._id).filter(Boolean);
+    const shopNames = new Map((await Shop.find({ _id: { $in: shopIds } }, { name: 1 }).lean()).map((s) => [String(s._id), s.name]));
     const empty = { orders: 0, pieces: 0, amount: 0 };
     const pick = ({ orders, pieces, amount }) => ({ orders, pieces, amount });
     const byMonth = new Map(result.byMonth.map((m) => [m._id, pick(m)]));
@@ -118,7 +122,9 @@ exports.getCustomerStats = async (customerID, now = new Date()) => {
         lastSixMonths: lastSix,
         // Months that have orders, newest first, for the month filter.
         months: result.byMonth.map((m) => ({ month: m._id, orders: m.orders })).filter((m) => m.month),
-        companies: result.companies.map((c) => ({ name: c._id, orders: c.orders })),
+        companies: result.companies
+            .map((c) => ({ id: c._id ? String(c._id) : null, name: c._id ? shopNames.get(String(c._id)) || "" : "", orders: c.orders }))
+            .sort((a, b) => b.orders - a.orders || a.name.localeCompare(b.name)),
         topItems: result.topItems.map((t) => ({ item: t._id, quantity: t.quantity })),
     };
 };

@@ -11,6 +11,7 @@ router.delete("/delete/:id", requireOwner, userController.deleteUser); // owner 
 router.post("/:id/restore", requireOwner, userController.restoreUser);
 router.get("/lastCustomerID", userController.getLastCustomerID);
 router.get("/:customerID/profile", userController.getCustomerProfile);
+router.put("/:customerID/kind", userController.setCustomerKind); // customer type (staff + owner)
 
 router.use((err, _req, res, next) => {
     if (err instanceof multer.MulterError) {

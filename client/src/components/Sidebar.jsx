@@ -1,5 +1,5 @@
 import { NavLink } from "react-router-dom";
-import { HomeIcon, PlusCircleIcon, UserGroupIcon, DocumentTextIcon, KeyIcon, ClockIcon } from "@heroicons/react/24/outline";
+import { HomeIcon, PlusCircleIcon, UserGroupIcon, DocumentTextIcon, KeyIcon, ClockIcon, BuildingStorefrontIcon } from "@heroicons/react/24/outline";
 import { useAuth } from "../context/AuthContext.jsx";
 
 // Five plain links, no dropdowns. On small screens only the icons show.
@@ -9,6 +9,7 @@ const LINKS = [
     { to: "/xray", label: "New X-ray", icon: PlusCircleIcon, accent: "text-purple-600" },
     { to: "/customers", label: "Customers", icon: UserGroupIcon },
     { to: "/orders", label: "Orders", icon: DocumentTextIcon },
+    { to: "/shops", label: "Shops", icon: BuildingStorefrontIcon },
 ];
 // Owner only.
 const OWNER_LINKS = [

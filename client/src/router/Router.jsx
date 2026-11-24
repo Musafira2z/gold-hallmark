@@ -3,6 +3,7 @@ import App from "../App";
 import Today from "../pages/Today";
 import Customers from "../pages/Customers";
 import Orders from "../pages/Orders";
+import Shops from "../pages/Shops";
 import UpdateUser from "../components/UpdateUser";
 import XRay from "../pages/Xray";
 import Hallmark from "../pages/Hallmark";
@@ -23,6 +24,7 @@ const router = createBrowserRouter([
             { path: "/customers", element: <Customers /> },
             { path: "/customers/:customerID", element: <CustomerProfile /> },
             { path: "/orders", element: <Orders /> },
+            { path: "/shops", element: <Shops /> },
             { path: "/orders/:id/edit", element: <EditOrder /> },
             { path: "/hallmark", element: <Hallmark /> },
             { path: "/xray", element: <XRay /> },

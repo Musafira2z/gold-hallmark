@@ -5,7 +5,7 @@ const { reportUrlFor } = require("../services/reportLink");
 const { monthRange } = require("../services/customerStats");
 const { dayRange, getSummary } = require("../services/orderSummary");
 
-const FILTER_KEYS = ["customerID", "month", "day", "company", "type", "q", "deleted", "status", "page", "limit"];
+const FILTER_KEYS = ["customerID", "month", "day", "company", "type", "q", "deleted", "status", "shop", "page", "limit"];
 
 // Today / this month / last 7 days, counted on the server.
 exports.getOrderSummary = async (_req, res) => {
@@ -24,7 +24,10 @@ exports.getOrders = async (req, res) => {
         // New: any of these filters returns a paged result { orders, total, page, pages, limit }.
         // Without them the old behaviour below is unchanged.
         if (FILTER_KEYS.some((key) => req.query[key] !== undefined)) {
-            const { customerID, month, day, company, type, q, deleted, status } = req.query;
+            const { customerID, month, day, company, shop, type, q, deleted, status } = req.query;
+            if (shop !== undefined && !/^[a-f0-9]{24}$/i.test(String(shop))) {
+                return res.status(400).json({ error: "Invalid shop" });
+            }
             if (status !== undefined && !["open", ...OrderService.STATUSES].includes(status)) {
                 return res.status(400).json({ error: "status must be open, received, ready or delivered" });
             }
@@ -49,7 +52,7 @@ exports.getOrders = async (req, res) => {
             if (!Number.isInteger(page) || page < 1 || !Number.isInteger(limit) || limit < 1 || limit > 200) {
                 return res.status(400).json({ error: "page must be 1 or more, limit 1 to 200" });
             }
-            const result = await OrderService.queryOrders({ customerID, month, day, company, type, q, deleted, status, page, limit });
+            const result = await OrderService.queryOrders({ customerID, month, day, company, shop, type, q, deleted, status, page, limit });
             return res.json(result);
         }
 

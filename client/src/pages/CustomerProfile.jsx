@@ -71,6 +71,59 @@ StatBox.propTypes = {
     sub: PropTypes.string,
 };
 
+// Customer type (Plan 16). Staff choose it; the page only suggests.
+const KINDS = [
+    { value: "", label: "Type not set" },
+    { value: "shop_owner", label: "Shop owner" },
+    { value: "karigor", label: "Karigor" },
+    { value: "other", label: "Other" },
+];
+function CustomerKind({ customer, shopCount, onSaved }) {
+    const [kind, setKind] = useState(customer.kind || "");
+    const [saving, setSaving] = useState(false);
+    useEffect(() => setKind(customer.kind || ""), [customer.kind]);
+    const save = async (next) => {
+        const before = kind;
+        setKind(next);
+        setSaving(true);
+        try {
+            await axios.put(`${apiUrl}/users/${customer.customerID}/kind`, { kind: next });
+            onSaved?.();
+        } catch (err) {
+            setKind(before);
+            window.alert(err.response?.data?.error || "Could not save the type.");
+        } finally {
+            setSaving(false);
+        }
+    };
+    const hint = !kind && shopCount >= 3 ? `Brought orders for ${shopCount} shops: probably a karigor` : "";
+    return (
+        <div className="flex flex-wrap items-center gap-2 mt-2">
+            <select
+                value={kind}
+                disabled={saving}
+                onChange={(e) => save(e.target.value)}
+                aria-label="Customer type"
+                className={`rounded-full border px-2 py-0.5 text-xs font-semibold ${kind ? "border-blue-300 bg-blue-50 text-blue-800" : "border-dashed border-gray-300 bg-white text-gray-500"}`}
+            >
+                {KINDS.map((k) => (
+                    <option key={k.value} value={k.value}>{k.label}</option>
+                ))}
+            </select>
+            {hint && (
+                <button type="button" onClick={() => save("karigor")} className="text-xs text-amber-700 hover:underline">
+                    {hint}. Set Karigor?
+                </button>
+            )}
+        </div>
+    );
+}
+CustomerKind.propTypes = {
+    customer: PropTypes.object.isRequired,
+    shopCount: PropTypes.number,
+    onSaved: PropTypes.func,
+};
+
 const CustomerProfile = () => {
     const { customerID } = useParams();
 
@@ -108,7 +161,7 @@ const CustomerProfile = () => {
             try {
                 const params = { customerID, page, limit: PAGE_SIZE };
                 if (month) params.month = month;
-                if (company) params.company = company;
+                if (company) params.shop = company; // shop record id
                 const res = await axios.get(`${apiUrl}/orders`, { params });
                 if (!cancelled) setOrders(res.data);
             } catch (err) {
@@ -150,7 +203,7 @@ const CustomerProfile = () => {
     const since = [customer.createdAt, stats.lifetime.firstOrder].filter(Boolean).sort()[0];
     const maxBar = Math.max(1, ...stats.lastSixMonths.map((m) => m.orders));
     const busiest = stats.lastSixMonths.reduce((a, b) => (b.orders > a.orders ? b : a), stats.lastSixMonths[0]);
-    const companies = stats.companies.filter((c) => c.name);
+    const companies = stats.companies.filter((c) => c.id && c.name);
 
     const changeFilter = (setter) => (e) => {
         setter(e.target.value);
@@ -186,6 +239,7 @@ const CustomerProfile = () => {
                             </span>
                         </div>
                         <p className="text-sm text-gray-500 mt-0.5">{lastVisitText(stats.lifetime.lastOrder)}</p>
+                        <CustomerKind customer={customer} shopCount={companies.length} onSaved={loadProfile} />
                         <div className="flex flex-wrap gap-x-5 gap-y-1 text-sm text-gray-700 mt-2">
                             {customer.contact && <span>{formatContactForDisplay(customer.contact)}</span>}
                             {customer.address && <span>{customer.address}</span>}
@@ -266,7 +320,7 @@ const CustomerProfile = () => {
                                 >
                                     <option value="">All shops ({companies.length})</option>
                                     {companies.map((c) => (
-                                        <option key={c.name} value={c.name}>
+                                        <option key={c.id} value={c.id}>
                                             {c.name}
                                         </option>
                                     ))}
@@ -395,10 +449,10 @@ const CustomerProfile = () => {
                             <h2 className="text-lg font-bold text-gray-900">Shops ({companies.length})</h2>
                             <ul className="mt-3 space-y-2 text-sm">
                                 {companies.slice(0, 8).map((c) => (
-                                    <li key={c.name} className="flex justify-between gap-3">
+                                    <li key={c.id} className="flex justify-between gap-3">
                                         <button
                                             onClick={() => {
-                                                setCompany(c.name);
+                                                setCompany(c.id);
                                                 setPage(1);
                                             }}
                                             className="text-left text-blue-700 hover:underline truncate"
