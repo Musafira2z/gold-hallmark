@@ -1,5 +1,6 @@
 const OrderService = require("../services/orderService");
 const { audit } = require("../services/audit");
+const { reportUrlFor } = require("../services/reportLink");
 
 const { monthRange } = require("../services/customerStats");
 const { dayRange, getSummary } = require("../services/orderSummary");
@@ -92,7 +93,7 @@ exports.getOrderById = async (req, res) => {
     try {
         const order = await OrderService.getOrderById(req.params.id);
         if (order) {
-            res.json(order);
+            res.json({ ...order.toObject(), reportUrl: reportUrlFor(order) });
         } else {
             res.status(404).json({ message: "Order not found" });
         }

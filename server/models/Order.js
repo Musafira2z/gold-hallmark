@@ -24,6 +24,9 @@ const orderSchema = new mongoose.Schema({
     paidAmount: Number,
     customerFrom: Date,
     image: String,
+    // Online report (Plan 14): random link for the QR, and a short code printed on the memo.
+    reportToken: String,
+    reportCode: String,
     // Order edits (BUGS F1): when it was last edited, and what it looked like before each edit.
     editedAt: Date,
     // "Deleted" orders stay in the database (BUGS U7): hidden from lists and totals.
@@ -41,6 +44,8 @@ const orderSchema = new mongoose.Schema({
 // Indexes only speed up lookups; they do not change any stored data.
 orderSchema.index({ customerID: 1, createdAt: -1 }); // customer profile / history
 orderSchema.index({ createdAt: -1 });                // day summary, newest first
+orderSchema.index({ updatedAt: 1, _id: 1 });         // online sync: what changed since last time
+orderSchema.index({ reportToken: 1 }, { unique: true, partialFilterExpression: { reportToken: { $type: "string" } } });
 // New memo numbers (1000001+) must be unique. Old random 6-digit numbers
 // have duplicates and are left as they are.
 orderSchema.index({ voucher: 1 }, { unique: true, partialFilterExpression: { voucher: { $gt: 1000000 } } });
