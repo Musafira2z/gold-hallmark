@@ -9,6 +9,8 @@ const TOKEN_RE = /^[A-Za-z0-9]{12}$/;
 const CODE_RE = /^[A-Z0-9]{4}$/;
 const OBJECT_ID_RE = /^[a-f0-9]{24}$/;
 const MAX_BATCH = 500;
+const STATUSES = ["received", "ready", "delivered"];
+const PURITIES = ["24K", "22K", "21K", "18K", "14K", "925"];
 
 // Compare secrets without leaking their length or content through timing.
 const sameSecret = (a, b) => {
@@ -61,12 +63,16 @@ const cleanIncoming = (o) => {
         shopUpdatedAt: toDate(o.updatedAt),
         editedAt: toDate(o.editedAt),
         deletedAt: toDate(o.deletedAt),
+        status: STATUSES.includes(o.status) ? o.status : "delivered",
+        readyAt: toDate(o.readyAt),
         items: items.map((it) => ({
             item: text(it && it.item),
             quantity: toNum(it && it.quantity),
             weight: toNum(it && it.weight),
             weightUnite: text(it && it.weightUnite, 20),
             xray: text(it && it.xray, 500),
+            purity: it && PURITIES.includes(it.purity) ? it.purity : null,
+            stamp: text(it && it.stamp, 40),
         })),
     };
 };

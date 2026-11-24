@@ -20,7 +20,7 @@ const order = (n, extra = {}) => ({
     updatedAt: "2026-11-24T05:00:00Z",
     contact: "01700000000",
     totalAmount: 500,
-    items: [{ item: "Ring", quantity: 1, weight: 2.5, weightUnite: "gm", xray: "22K 91.6%", rate: 500 }],
+    items: [{ item: "Ring", quantity: 1, weight: 2.5, weightUnite: "gm", xray: "PJ 916", purity: "22K", stamp: "PJ", rate: 500 }],
     ...extra,
 });
 
@@ -70,7 +70,10 @@ test("report page by token, escaped, and 404 for unknown", async () => {
     assert.equal(res.status, 200);
     const html = await res.text();
     assert.match(html, /Verified report/);
-    assert.match(html, /22K 91\.6%/);
+    assert.match(html, /22K gold/);
+    assert.match(html, /91\.6%/);
+    assert.match(html, /PJ 916/);
+    assert.doesNotMatch(html, /Ready for pickup/);
     assert.match(html, /Test Shop &lt;b&gt;/);
     assert.equal(res.headers.get("x-frame-options"), "DENY");
     res = await fetch(`${base}/r/Tok999999999`);
@@ -101,6 +104,15 @@ test("memo number + code finds the report; wrong tries get blocked", async () =>
     }
     res = await fetch(`${base}/report?memo=1000001&code=AB3D`, { redirect: "manual" });
     assert.equal(res.status, 429, "blocked even with the right code after too many wrong tries");
+});
+
+test("ready orders say so; bad status/purity values are dropped", async () => {
+    await send([order(3, { status: "ready", readyAt: "2026-11-24T06:00:00Z" })]);
+    const html = await (await fetch(`${base}/r/${order(3).reportToken}`)).text();
+    assert.match(html, /Ready for pickup/);
+    const clean = cleanIncoming(order(4, { status: "hacked", items: [{ item: "X", purity: "<b>", xray: "1" }] }));
+    assert.equal(clean.status, "delivered");
+    assert.equal(clean.items[0].purity, null);
 });
 
 test("cleanIncoming rejects bad tokens and codes", () => {

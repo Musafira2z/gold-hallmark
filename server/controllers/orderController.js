@@ -5,7 +5,7 @@ const { reportUrlFor } = require("../services/reportLink");
 const { monthRange } = require("../services/customerStats");
 const { dayRange, getSummary } = require("../services/orderSummary");
 
-const FILTER_KEYS = ["customerID", "month", "day", "company", "type", "q", "deleted", "page", "limit"];
+const FILTER_KEYS = ["customerID", "month", "day", "company", "type", "q", "deleted", "status", "page", "limit"];
 
 // Today / this month / last 7 days, counted on the server.
 exports.getOrderSummary = async (_req, res) => {
@@ -24,7 +24,10 @@ exports.getOrders = async (req, res) => {
         // New: any of these filters returns a paged result { orders, total, page, pages, limit }.
         // Without them the old behaviour below is unchanged.
         if (FILTER_KEYS.some((key) => req.query[key] !== undefined)) {
-            const { customerID, month, day, company, type, q, deleted } = req.query;
+            const { customerID, month, day, company, type, q, deleted, status } = req.query;
+            if (status !== undefined && !["open", ...OrderService.STATUSES].includes(status)) {
+                return res.status(400).json({ error: "status must be open, received, ready or delivered" });
+            }
             if (deleted !== undefined && (deleted !== "only" || req.staff.role !== "owner")) {
                 return res.status(403).json({ error: "Only the owner can see deleted orders." });
             }
@@ -46,7 +49,7 @@ exports.getOrders = async (req, res) => {
             if (!Number.isInteger(page) || page < 1 || !Number.isInteger(limit) || limit < 1 || limit > 200) {
                 return res.status(400).json({ error: "page must be 1 or more, limit 1 to 200" });
             }
-            const result = await OrderService.queryOrders({ customerID, month, day, company, type, q, deleted, page, limit });
+            const result = await OrderService.queryOrders({ customerID, month, day, company, type, q, deleted, status, page, limit });
             return res.json(result);
         }
 
@@ -115,6 +118,23 @@ exports.updateOrder = async (req, res) => {
         if (error.name === "CastError") return res.status(404).json({ message: "Order not found" });
         console.error("Error updating order:", error);
         res.status(500).json({ error: "Failed to update order" });
+    }
+};
+
+const STATUS_LABEL = { received: "Received", ready: "Ready", delivered: "Delivered" };
+exports.setOrderStatus = async (req, res) => {
+    try {
+        const status = req.body && req.body.status;
+        const result = await OrderService.setStatus(req.params.id, status, req.staff.name);
+        if (!result) return res.status(404).json({ error: "Order not found" });
+        if (result.error) return res.status(400).json({ error: result.error });
+        const { order, before } = result;
+        await audit(req, "order.status", order._id, `Memo ${order.voucher}: ${STATUS_LABEL[before]} → ${STATUS_LABEL[status]}`);
+        res.json(order);
+    } catch (error) {
+        if (error.name === "CastError") return res.status(404).json({ error: "Order not found" });
+        console.error("Error setting status:", error);
+        res.status(500).json({ error: "Could not change the status" });
     }
 };
 

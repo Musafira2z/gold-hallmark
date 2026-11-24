@@ -7,7 +7,10 @@ const itemSchema = new mongoose.Schema({  // Schema for individual items
     weight: Number,
     amount: Number,
     weightUnite: String,
-    xray: String,
+    xray: String,       // the Hall Mark text as typed (always kept)
+    // Read from `xray` by the server (Plan 15): "22K", "21K", ... or null; and the shop letters.
+    purity: String,
+    stamp: String,
 });
 
 const orderSchema = new mongoose.Schema({
@@ -27,6 +30,12 @@ const orderSchema = new mongoose.Schema({
     // Online report (Plan 14): random link for the QR, and a short code printed on the memo.
     reportToken: String,
     reportCode: String,
+    // Status (Plan 15): received -> ready -> delivered. Missing on old orders = delivered.
+    status: { type: String, enum: ["received", "ready", "delivered"] },
+    readyAt: Date,
+    deliveredAt: Date,
+    statusBy: String,
+    parseV: Number, // version of the Hall Mark reader used for purity/stamp
     // Order edits (BUGS F1): when it was last edited, and what it looked like before each edit.
     editedAt: Date,
     // "Deleted" orders stay in the database (BUGS U7): hidden from lists and totals.
@@ -44,6 +53,7 @@ const orderSchema = new mongoose.Schema({
 // Indexes only speed up lookups; they do not change any stored data.
 orderSchema.index({ customerID: 1, createdAt: -1 }); // customer profile / history
 orderSchema.index({ createdAt: -1 });                // day summary, newest first
+orderSchema.index({ status: 1, createdAt: -1 });     // "waiting for pickup"
 orderSchema.index({ updatedAt: 1, _id: 1 });         // online sync: what changed since last time
 orderSchema.index({ reportToken: 1 }, { unique: true, partialFilterExpression: { reportToken: { $type: "string" } } });
 // New memo numbers (1000001+) must be unique. Old random 6-digit numbers

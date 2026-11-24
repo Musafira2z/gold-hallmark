@@ -2,6 +2,14 @@
 const CENTER = "Sylhet Gold Hallmark Center";
 const TZ = "Asia/Dhaka";
 const TYPE_LABEL = { hallmark: "Hallmark", xray: "X-ray" };
+const PURITY = {
+    "24K": { label: "24K gold", pct: "99.9%" },
+    "22K": { label: "22K gold", pct: "91.6%" },
+    "21K": { label: "21K gold", pct: "87.5%" },
+    "18K": { label: "18K gold", pct: "75.0%" },
+    "14K": { label: "14K gold", pct: "58.5%" },
+    "925": { label: "Silver 925", pct: "92.5%" },
+};
 
 const esc = (value) =>
     String(value ?? "").replace(/[&<>"']/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[ch]));
@@ -35,6 +43,8 @@ h2{font-size:15px;margin:0 0 10px;color:var(--muted);font-weight:600}
 .item .meta{color:var(--muted);font-size:14px}
 .result{margin-top:6px;padding:8px 10px;border-radius:8px;background:var(--bg);border-left:4px solid var(--gold)}
 .result span{display:block;font-size:12px;color:var(--muted)}
+.purity{font-size:22px;font-weight:800;color:var(--gold);line-height:1.2}
+.purity small{font-size:14px;font-weight:600;color:var(--muted);margin-left:6px}
 form label{display:block;font-size:14px;color:var(--muted);margin:10px 0 4px}
 input{width:100%;font:inherit;padding:12px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink)}
 button{width:100%;margin-top:16px;font:inherit;font-weight:700;padding:12px;border:0;border-radius:10px;background:var(--gold);color:#fff}
@@ -64,8 +74,12 @@ const statusBox = (r) => {
         ? `<div class="status warn"><span class="mark">!</span><div>Corrected · সংশোধিত
 <small>The center corrected this report on ${esc(day(r.editedAt))}. This page shows the latest version.</small></div></div>`
         : "";
+    const ready = r.status === "ready"
+        ? `<div class="status ok"><span class="mark">●</span><div>Ready for pickup · নিয়ে যাওয়ার জন্য প্রস্তুত
+<small>Since ${esc(day(r.readyAt))}, ${esc(time(r.readyAt))}</small></div></div>`
+        : "";
     return `<div class="status ok"><span class="mark">✓</span><div>Verified report · যাচাইকৃত রিপোর্ট
-<small>Issued by ${CENTER}</small></div></div>${corrected}`;
+<small>Issued by ${CENTER}</small></div></div>${ready}${corrected}`;
 };
 
 const weightText = (it) => (it.weight === null || it.weight === undefined ? "" : `${it.weight} ${it.weightUnite || ""}`.trim());
@@ -74,9 +88,14 @@ const reportPage = (r) => {
     const items = (r.items || []).map((it) => {
         const meta = [it.quantity ? `Qty ${esc(it.quantity)}` : "", weightText(it) ? `Weight ${esc(weightText(it))}` : ""]
             .filter(Boolean).join(" · ");
-        const result = it.xray
-            ? `<div class="result"><span>Result · ফলাফল</span>${esc(it.xray)}</div>`
-            : "";
+        const p = PURITY[it.purity];
+        let result = "";
+        if (p) {
+            const mark = it.xray ? `<span style="margin-top:6px">Mark on item · গহনায় ছাপ</span>${esc(it.xray)}` : "";
+            result = `<div class="result"><span>Purity · বিশুদ্ধতা</span><div class="purity">${p.label}<small>${p.pct}</small></div>${mark}</div>`;
+        } else if (it.xray) {
+            result = `<div class="result"><span>Result · ফলাফল</span>${esc(it.xray)}</div>`;
+        }
         return `<div class="item"><div class="name">${esc(it.item || "Item")}</div>${meta ? `<div class="meta">${meta}</div>` : ""}${result}</div>`;
     }).join("");
     const body = `${statusBox(r)}
