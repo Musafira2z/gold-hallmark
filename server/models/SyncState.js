@@ -5,6 +5,7 @@ const syncStateSchema = new mongoose.Schema({
     _id: String,            // e.g. "orders"
     cursorAt: Date,         // updatedAt of the last record the website accepted
     cursorId: mongoose.Schema.Types.ObjectId, // its _id (several records can share a time)
+    schema: Number,         // data format last sent (see SYNC_SCHEMA in services/sync.js)
     lastOkAt: Date,         // last time a send worked (or there was nothing to send)
     lastTryAt: Date,
     lastError: String,      // empty when the last try worked

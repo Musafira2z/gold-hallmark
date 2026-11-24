@@ -41,7 +41,7 @@ const getSummary = async (now = new Date()) => {
     const month = monthRange(monthKey(now));
     const weekStart = dayRange(dayKey(now, -6)).start;
 
-    const [[result], customers, dues, cashToday] = await Promise.all([
+    const [[result], customers, dues, cashToday, waitingRows] = await Promise.all([
         Order.aggregate([
             { $match: { deletedAt: null, createdAt: { $gte: weekStart < month.start ? weekStart : month.start } } },
             {
@@ -64,7 +64,14 @@ const getSummary = async (now = new Date()) => {
         User.countDocuments({ deletedAt: null }),
         allDues(),
         cashBetween(today.start, today.end),
+        Order.aggregate([
+            { $match: { deletedAt: null, status: { $in: ["received", "ready"] } } },
+            { $group: { _id: "$status", n: { $sum: 1 } } },
+        ]),
     ]);
+    const waitingBy = Object.fromEntries(waitingRows.map((r) => [r._id, r.n]));
+    const waiting = { received: waitingBy.received || 0, ready: waitingBy.ready || 0 };
+    waiting.total = waiting.received + waiting.ready;
 
     const empty = { orders: 0, amount: 0, hallmark: 0, xray: 0 };
     const clean = (rows) => {
@@ -90,6 +97,7 @@ const getSummary = async (now = new Date()) => {
         cashToday,
         totalDue: dues.totalDue,
         customersWithDue: dues.customersWithDue,
+        waiting, // not delivered yet: { received, ready, total }
     };
 };
 

@@ -3,6 +3,7 @@ const { monthRange } = require("./customerStats");
 const { dayRange } = require("./orderSummary");
 const { nextVoucher, syncVoucherCounter } = require("./memoNumber");
 const { newReportToken, newReportCode } = require("./reportLink");
+const { withPurity, PARSE_VERSION } = require("./hallmarkText");
 const { normalizePhone } = require("../utils/phone");
 
 const round2 = (n) => Math.round(n * 100) / 100;
@@ -80,7 +81,8 @@ exports.updateOrder = async (id, { items, company }) => {
         totalAmount: order.totalAmount,
         items: order.items.map((it) => it.toObject()),
     });
-    order.items = prepared.items;
+    order.items = withPurity(prepared.items);
+    order.parseV = PARSE_VERSION;
     order.totalAmount = prepared.total;
     if (company !== undefined) order.company = company.trim();
     order.editedAt = new Date();
@@ -93,7 +95,7 @@ exports.createOrder = async (orderData, items, file) => { // Add items parameter
     const imagePath = file ? `/uploads/${file.filename}` : null; // Or your cloud storage logic
     // The server gives the memo number; anything the browser sent is ignored (BUGS D2).
     // eslint-disable-next-line no-unused-vars
-    const { voucher: _ignored, paidAmount: paidRaw, reportToken: _t, reportCode: _c, ...data } = orderData;
+    const { voucher: _ignored, paidAmount: paidRaw, reportToken: _t, reportCode: _c, status: _s, readyAt: _r, deliveredAt: _d, statusBy: _b, parseV: _p, ...data } = orderData;
 
     // Amounts worked out here (quantity x rate), the same way as when editing an order.
     const cleaned = cleanItems(items).map((it) =>
@@ -115,7 +117,9 @@ exports.createOrder = async (orderData, items, file) => { // Add items parameter
                 ...data,
                 contact: normalizePhone(data.contact), // 1725275114 -> 01725275114
                 voucher: await nextVoucher(),
-                items: cleaned, // numbers only; bad values become null
+                items: withPurity(cleaned), // numbers only; bad values become null; + purity/stamp
+                parseV: PARSE_VERSION,
+                status: "received",
                 totalAmount: total,
                 paidAmount: paid,
                 image: imagePath,
@@ -167,6 +171,57 @@ exports.deleteOrder = async (id, byName) => {
     }
 };
 
+// Status (Plan 15). Returns the order, null if not found, or { error }.
+const STATUSES = ["received", "ready", "delivered"];
+exports.STATUSES = STATUSES;
+exports.setStatus = async (id, status, byName) => {
+    if (!STATUSES.includes(status)) return { error: "Status must be received, ready or delivered." };
+    const order = await Order.findById(id);
+    if (!order) return null;
+    if (order.deletedAt) return { error: "This order is deleted. Restore it first." };
+    const before = order.status || "delivered";
+    order.status = status;
+    order.statusBy = byName;
+    if (status === "ready") order.readyAt = new Date();
+    if (status === "delivered") order.deliveredAt = new Date();
+    if (status === "received") {
+        order.readyAt = undefined;
+        order.deliveredAt = undefined;
+    }
+    if (status === "ready") order.deliveredAt = undefined;
+    await order.save();
+    return { order, before };
+};
+
+// Status filter for lists. "open" = not delivered yet. Old orders (no status) are delivered.
+const statusQuery = (status) => {
+    if (status === "open") return { status: { $in: ["received", "ready"] } };
+    if (status === "received" || status === "ready") return { status };
+    if (status === "delivered") return { status: { $nin: ["received", "ready"] } };
+    return {};
+};
+
+// Old orders get purity/stamp once (or again when the reader changes). updatedAt is left alone.
+exports.ensureItemPurity = async () => {
+    let done = 0;
+    for (;;) {
+        const batch = await Order.find({ parseV: { $ne: PARSE_VERSION } }, { items: 1 }).limit(500).lean();
+        if (batch.length === 0) break;
+        await Order.bulkWrite(
+            batch.map((o) => ({
+                updateOne: {
+                    filter: { _id: o._id },
+                    update: { $set: { ...(Array.isArray(o.items) ? { items: withPurity(o.items) } : {}), parseV: PARSE_VERSION } },
+                    timestamps: false,
+                },
+            })),
+            { ordered: false, timestamps: false }
+        );
+        done += batch.length;
+    }
+    return done;
+};
+
 exports.restoreOrder = async (id) =>
     Order.findOneAndUpdate({ _id: id, deletedAt: { $ne: null } }, { $unset: { deletedAt: 1, deletedBy: 1 } }, { new: true });
 
@@ -175,9 +230,10 @@ exports.restoreOrder = async (id) =>
 // Returns { orders, total, amount, page, pages, limit }.
 const escapeRegex = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
-exports.queryOrders = async ({ customerID, month, day, company, type, q, deleted, page = 1, limit = 50 }) => {
+exports.queryOrders = async ({ customerID, month, day, company, type, q, deleted, status, page = 1, limit = 50 }) => {
     // deleted: "only" = just the deleted ones (owner); otherwise deleted ones are left out.
     const query = deleted === "only" ? { deletedAt: { $ne: null } } : { ...NOT_DELETED };
+    Object.assign(query, statusQuery(status));
     if (customerID !== undefined) query.customerID = String(customerID);
     if (company !== undefined) query.company = company;
     if (type !== undefined) query.type = type;

@@ -6,6 +6,7 @@ const connectDB = require("./config/db"); // Import database connection
 const { ensureDefaultItems } = require("./services/itemService");
 const { syncVoucherCounter } = require("./services/memoNumber");
 const { ensureReportLinks } = require("./services/reportLink");
+const { ensureItemPurity } = require("./services/orderService");
 const { startSync, syncStatus } = require("./services/sync");
 
 const userRoutes = require("./routes/userRoutes");
@@ -35,6 +36,8 @@ connectDB()
         console.log("Default item names are synced.");
         await syncVoucherCounter();
         console.log("Memo number counter is ready.");
+        const parsed = await ensureItemPurity();
+        if (parsed) console.log(`Purity read for ${parsed} older orders.`);
         const linked = await ensureReportLinks();
         console.log(`Report links ready${linked ? ` (${linked} older orders got one)` : ""}.`);
         startSync();

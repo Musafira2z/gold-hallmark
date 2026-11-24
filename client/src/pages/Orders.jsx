@@ -21,6 +21,7 @@ function Orders() {
     const day = dayParam === "today" ? dhakaToday() : dayParam || "";
     const month = params.get("month") || "";
     const type = params.get("type") || "";
+    const status = params.get("status") || "";
     const q = params.get("q") || "";
     const page = Math.max(1, Number(params.get("page")) || 1);
 
@@ -54,6 +55,7 @@ function Orders() {
             if (day) query.day = day;
             else if (month) query.month = month;
             if (type) query.type = type;
+            if (status) query.status = status;
             if (q) query.q = q;
             if (showDeleted) query.deleted = "only";
             const res = await axios.get(`${apiUrl}/orders`, { params: query });
@@ -64,7 +66,7 @@ function Orders() {
         } finally {
             setLoading(false);
         }
-    }, [day, month, type, q, page, showDeleted]);
+    }, [day, month, type, q, status, page, showDeleted]);
 
     useEffect(() => {
         load();
@@ -136,6 +138,18 @@ function Orders() {
                         <option value="hallmark">Hallmark only</option>
                         <option value="xray">X-ray only</option>
                     </select>
+                    <select
+                        value={status}
+                        onChange={(e) => update({ status: e.target.value })}
+                        aria-label="Order status"
+                        className="rounded-lg border border-gray-300 px-2 py-1.5 text-sm"
+                    >
+                        <option value="">Any status</option>
+                        <option value="open">Waiting for pickup</option>
+                        <option value="received">Received</option>
+                        <option value="ready">Ready</option>
+                        <option value="delivered">Delivered</option>
+                    </select>
                     {isOwner && (
                         <button type="button" className={`${chip(showDeleted)} ml-auto`} onClick={() => update({ deleted: showDeleted ? "" : "only" })}>
                             {showDeleted ? "← Back to orders" : "Deleted"}
@@ -172,7 +186,7 @@ function Orders() {
                     <Loading />
                 ) : data && data.orders.length > 0 ? (
                     <div className={loading ? "opacity-50" : ""}>
-                        <OrderTable orders={data.orders} showDate={!day} onDelete={isOwner ? handleDelete : undefined} onRestore={isOwner ? handleRestore : undefined} />
+                        <OrderTable orders={data.orders} showDate={!day} onDelete={isOwner ? handleDelete : undefined} onRestore={isOwner ? handleRestore : undefined} onStatusChange={status ? load : undefined} />
                         <Pager page={data.page} pages={data.pages} onChange={(p) => update({ page: String(p) })} />
                     </div>
                 ) : (

@@ -7,7 +7,9 @@ const itemSchema = new mongoose.Schema({
     quantity: Number,
     weight: Number,
     weightUnite: String,
-    xray: String, // the result text
+    xray: String,   // the Hall Mark text as typed at the shop
+    purity: String, // "22K", "21K", ... read from it (null if unclear)
+    stamp: String,  // the shop letters in the mark
 }, { _id: false });
 
 const reportSchema = new mongoose.Schema({
@@ -21,6 +23,8 @@ const reportSchema = new mongoose.Schema({
     shopUpdatedAt: Date,   // order's updatedAt on the shop PC
     editedAt: Date,
     deletedAt: Date,
+    status: String,  // received | ready | delivered
+    readyAt: Date,
     items: [itemSchema],
     syncedAt: Date,
 }, { versionKey: false });

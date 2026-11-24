@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import axios from "axios";
 import { apiUrl } from "../context/UserContext.jsx";
 import { Button, Card, EmptyState, ErrorBox, Loading, PageHeader, StatBox } from "../components/ui/index.jsx";
@@ -52,7 +53,15 @@ function Today() {
 
             {error && <ErrorBox text={error} onRetry={load} />}
 
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
+                <Link to="/orders?status=open" className="block rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-300" aria-label="Orders waiting for pickup">
+                    <StatBox
+                        label="Waiting for pickup"
+                        value={summary?.waiting?.total}
+                        hint={summary?.waiting ? `${summary.waiting.ready} ready · ${summary.waiting.received} received` : null}
+                        loading={loading}
+                    />
+                </Link>
                 <StatBox
                     label="Orders today"
                     value={summary?.today.orders}
@@ -87,7 +96,7 @@ function Today() {
                 {!orders && !error ? (
                     <Loading />
                 ) : orders && orders.orders.length > 0 ? (
-                    <OrderTable orders={orders.orders} showDate={false} />
+                    <OrderTable orders={orders.orders} showDate={false} onStatusChange={load} />
                 ) : (
                     <EmptyState
                         title="No orders yet today"

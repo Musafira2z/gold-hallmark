@@ -2,12 +2,13 @@ import { Link } from "react-router-dom";
 import PropTypes from "prop-types";
 import { Button, TypeBadge } from "./ui/index.jsx";
 import { formatDay, formatTime, taka } from "../utils/format.js";
+import StatusSelect from "./StatusSelect.jsx";
 
 const pieces = (order) => (order.items || []).reduce((sum, i) => sum + (Number(i.quantity) || 0), 0);
 
 // One table for orders everywhere (Today, Orders). Each row: memo number,
 // when, customer (links to the profile), type, pieces, amount, Memo button.
-function OrderTable({ orders, showDate = true, onDelete, onRestore }) {
+function OrderTable({ orders, showDate = true, onDelete, onRestore, onStatusChange }) {
     return (
         <div className="overflow-x-auto">
             <table className="w-full text-sm">
@@ -17,6 +18,7 @@ function OrderTable({ orders, showDate = true, onDelete, onRestore }) {
                         <th className="px-4 py-2.5">{showDate ? "Date" : "Time"}</th>
                         <th className="px-4 py-2.5">Customer</th>
                         <th className="px-4 py-2.5">Type</th>
+                        <th className="px-4 py-2.5">Status</th>
                         <th className="px-4 py-2.5 text-right">Pcs</th>
                         <th className="px-4 py-2.5 text-right">Amount</th>
                         <th className="px-4 py-2.5 text-right">
@@ -53,6 +55,9 @@ function OrderTable({ orders, showDate = true, onDelete, onRestore }) {
                             </td>
                             <td className="px-4 py-2.5">
                                 <TypeBadge type={order.type} />
+                            </td>
+                            <td className="px-4 py-2.5">
+                                <StatusSelect order={order} onChange={onStatusChange} />
                             </td>
                             <td className="px-4 py-2.5 text-right tabular-nums">{pieces(order)}</td>
                             <td className="px-4 py-2.5 text-right font-semibold tabular-nums text-gray-900">
@@ -96,6 +101,7 @@ OrderTable.propTypes = {
     showDate: PropTypes.bool,
     onDelete: PropTypes.func,
     onRestore: PropTypes.func,
+    onStatusChange: PropTypes.func,
 };
 
 export default OrderTable;

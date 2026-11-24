@@ -12,6 +12,10 @@ const SyncState = require("../models/SyncState");
 const BATCH = 200;
 const SETTLE_MS = 5000; // stay 5 s behind the clock so a save in progress is never skipped
 const STATE_ID = "orders";
+// Raise when the data sent to the website changes shape: everything is sent again once.
+// The Hall Mark reader version is part of it, because a new reader changes purity/stamp
+// on old orders without changing their updatedAt.
+const SYNC_SCHEMA = 2 * 100 + require("./hallmarkText").PARSE_VERSION;
 const EPOCH = new Date(0);
 
 const settings = () => ({
@@ -37,6 +41,8 @@ const toReport = (o) => ({
     createdAt: o.createdAt,
     updatedAt: o.updatedAt,
     editedAt: o.editedAt || null,
+    status: o.status || "delivered",
+    readyAt: o.readyAt || null,
     deletedAt: o.deletedAt || null,
     items: itemsOf(o).map((it) => ({
         item: it.item || "",
@@ -44,6 +50,8 @@ const toReport = (o) => ({
         weight: it.weight ?? null,
         weightUnite: it.weightUnite || "",
         xray: it.xray || "",
+        purity: it.purity || null,
+        stamp: it.stamp || "",
     })),
 });
 
@@ -64,7 +72,16 @@ const syncOnce = async () => {
     running = true;
     let sentNow = 0;
     try {
-        const state = (await SyncState.findById(STATE_ID).lean()) || { _id: STATE_ID };
+        let state = (await SyncState.findById(STATE_ID).lean()) || { _id: STATE_ID };
+        if (state.schema !== SYNC_SCHEMA) {
+            console.log(`Sync: data format ${SYNC_SCHEMA}, sending everything again.`);
+            await SyncState.updateOne(
+                { _id: STATE_ID },
+                { $set: { schema: SYNC_SCHEMA }, $unset: { cursorAt: 1, cursorId: 1 } },
+                { upsert: true }
+            );
+            state = { _id: STATE_ID, schema: SYNC_SCHEMA };
+        }
         const before = new Date(Date.now() - SETTLE_MS);
         for (;;) {
             const batch = await Order.find(changedSince(state, before))
