@@ -2,6 +2,7 @@ const Order = require("../models/Order");
 const { monthRange } = require("./customerStats");
 const { dayRange } = require("./orderSummary");
 const { nextVoucher, syncVoucherCounter } = require("./memoNumber");
+const { newReportToken, newReportCode } = require("./reportLink");
 const { normalizePhone } = require("../utils/phone");
 
 const round2 = (n) => Math.round(n * 100) / 100;
@@ -92,7 +93,7 @@ exports.createOrder = async (orderData, items, file) => { // Add items parameter
     const imagePath = file ? `/uploads/${file.filename}` : null; // Or your cloud storage logic
     // The server gives the memo number; anything the browser sent is ignored (BUGS D2).
     // eslint-disable-next-line no-unused-vars
-    const { voucher: _ignored, paidAmount: paidRaw, ...data } = orderData;
+    const { voucher: _ignored, paidAmount: paidRaw, reportToken: _t, reportCode: _c, ...data } = orderData;
 
     // Amounts worked out here (quantity x rate), the same way as when editing an order.
     const cleaned = cleanItems(items).map((it) =>
@@ -118,6 +119,8 @@ exports.createOrder = async (orderData, items, file) => { // Add items parameter
                 totalAmount: total,
                 paidAmount: paid,
                 image: imagePath,
+                reportToken: newReportToken(),
+                reportCode: newReportCode(),
             });
             return await newOrder.save();
         } catch (error) {

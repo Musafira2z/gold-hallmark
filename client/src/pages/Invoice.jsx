@@ -5,6 +5,7 @@ import "./print.css"
 import { apiUrl } from "../context/UserContext.jsx";
 import { formatContactForDisplay } from "../utils/formatContact.js";
 import { loadPhoto } from "../utils/authImage.js";
+import QRCode from "qrcode";
 
 // Dates on the memo are always Bangladesh time, whatever the PC's clock zone is.
 const TZ = "Asia/Dhaka";
@@ -22,6 +23,7 @@ const Invoice = () => {
     const [order, setOrder] = useState(null);
     const [balance, setBalance] = useState(null);
     const [photo, setPhoto] = useState(null);
+    const [qr, setQr] = useState(null);
     const didPrint = useRef(false);
 
     useEffect(() => {
@@ -36,6 +38,10 @@ const Invoice = () => {
                         new Promise((resolve) => setTimeout(() => resolve(null), 5000)),
                     ]);
                     setPhoto(photoUrl);
+                }
+                // QR for the online report (Plan 14). Made here, so it is ready before printing.
+                if (response.data?.reportUrl) {
+                    setQr(await QRCode.toDataURL(response.data.reportUrl, { margin: 1, width: 200 }).catch(() => null));
                 }
                 setOrder(response.data); // Update the order state
                 // Customer's total dues, printed under this memo's own numbers.
@@ -208,6 +214,15 @@ const Invoice = () => {
                             <p className="text-xs text-gray-600">Edited {memoDate(order.editedAt)}</p>
                         )}
                     </div>
+                    {qr && (
+                        <div className="flex items-center gap-2">
+                            <div className="text-right text-xs leading-tight">
+                                <p className="font-semibold">Scan for the online report</p>
+                                <p>Report code: <span className="font-mono text-sm font-bold tracking-widest">{order.reportCode}</span></p>
+                            </div>
+                            <img src={qr} alt="Report QR code" className="h-20 w-20" />
+                        </div>
+                    )}
                 </div>
 
                 <div className="flex justify-between items-center mt-6">

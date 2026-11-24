@@ -5,6 +5,8 @@ const cors = require("cors");
 const connectDB = require("./config/db"); // Import database connection
 const { ensureDefaultItems } = require("./services/itemService");
 const { syncVoucherCounter } = require("./services/memoNumber");
+const { ensureReportLinks } = require("./services/reportLink");
+const { startSync, syncStatus } = require("./services/sync");
 
 const userRoutes = require("./routes/userRoutes");
 const orderRoutes = require("./routes/orderRoutes");
@@ -33,6 +35,9 @@ connectDB()
         console.log("Default item names are synced.");
         await syncVoucherCounter();
         console.log("Memo number counter is ready.");
+        const linked = await ensureReportLinks();
+        console.log(`Report links ready${linked ? ` (${linked} older orders got one)` : ""}.`);
+        startSync();
     })
     .catch((error) => {
         console.error("Failed to connect to the database", error);
@@ -45,6 +50,13 @@ app.use("/users", requireAuth, paymentRoutes, userRoutes);
 app.use("/orders", requireAuth, orderRoutes);
 app.use("/items", requireAuth, itemRoutes);
 app.use("/admin", requireAuth, requireOwner, staffRoutes); // owner only
+app.get("/sync/status", requireAuth, async (_req, res) => {
+    try {
+        res.json(await syncStatus());
+    } catch (error) {
+        res.status(500).json({ error: "Could not read sync status" });
+    }
+});
 
 app.get("/", (req, res) => {
     res.json("Welcome to Gold Hallmark API");
