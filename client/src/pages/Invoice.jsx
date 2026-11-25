@@ -1,11 +1,14 @@
 import axios from "axios";
 import { useEffect, useRef, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useSearchParams } from "react-router-dom";
 import "./print.css"
 import { apiUrl } from "../context/UserContext.jsx";
 import { formatContactForDisplay } from "../utils/formatContact.js";
 import { loadPhoto } from "../utils/authImage.js";
+import { purityText } from "../utils/purity.js";
 import QRCode from "qrcode";
+
+// The A4 memo (Plan 20). Drawn as an A4 sheet on screen too, so what staff see is what prints.
 
 // Dates on the memo are always Bangladesh time, whatever the PC's clock zone is.
 const TZ = "Asia/Dhaka";
@@ -18,8 +21,22 @@ const MEMO_TITLE = { hallmark: "Hallmark Cash Memo", xray: "X-ray Cash Memo" };
 // Old orders have no paidAmount: their memo always said fully paid.
 const paidOf = (order) => (order.paidAmount === undefined || order.paidAmount === null ? order.totalAmount : order.paidAmount);
 const money = (n) => Number(n || 0).toLocaleString("en-IN", { maximumFractionDigits: 2 });
+const weightText = (item) =>
+    item.weight === null || item.weight === undefined || item.weight === "" ? "—" : `${item.weight} ${item.weightUnite || ""}`.trim();
+// "sylhethallmark.com/report" from the QR link, so each copy of the app prints its own site.
+const lookupAddress = (reportUrl) => {
+    try {
+        const u = new URL(reportUrl);
+        return `${u.host}/report`;
+    } catch {
+        return null;
+    }
+};
+
 const Invoice = () => {
     const { id } = useParams(); // Get the order ID from the URL
+    const [searchParams] = useSearchParams();
+    const viewOnly = searchParams.get("view") === "1"; // look at the memo without the print dialog
     const [order, setOrder] = useState(null);
     const [balance, setBalance] = useState(null);
     const [photo, setPhoto] = useState(null);
@@ -41,7 +58,7 @@ const Invoice = () => {
                 }
                 // QR for the online report (Plan 14). Made here, so it is ready before printing.
                 if (response.data?.reportUrl) {
-                    setQr(await QRCode.toDataURL(response.data.reportUrl, { margin: 1, width: 200 }).catch(() => null));
+                    setQr(await QRCode.toDataURL(response.data.reportUrl, { margin: 0, width: 360, errorCorrectionLevel: "M" }).catch(() => null));
                 }
                 setOrder(response.data); // Update the order state
                 // Customer's total dues, printed under this memo's own numbers.
@@ -51,8 +68,7 @@ const Invoice = () => {
                         .catch(() => setBalance(null));
                 }
 
-                // Add this condition check before the print operation
-                if (!didPrint.current) {
+                if (!didPrint.current && !viewOnly) {
                     didPrint.current = true;
 
                     // Wait for a short delay to ensure the DOM renders
@@ -96,7 +112,7 @@ const Invoice = () => {
                                 }
                             }
                         };
-                        
+
                         // Add listener (support both old and new API)
                         if (mediaQueryList.addListener) {
                             mediaQueryList.addListener(handleMediaChange);
@@ -114,127 +130,143 @@ const Invoice = () => {
         };
 
         fetchOrderData();
-    }, [id]);
+    }, [id, viewOnly]);
 
 
     if (!order) {
-        return <div>Loading...</div>;
+        return <div className="p-8 text-gray-600">Loading the memo…</div>;
     }
+    const paid = paidOf(order);
+    const due = order.totalAmount - paid;
+    const lookup = order.reportUrl ? lookupAddress(order.reportUrl) : null;
+    const site = lookup ? lookup.replace(/\/report$/, "") : null;
+    const items = order.items || [];
+
     return (
-        <div className="bg-[#E0F2F1] h-[100vh] pt-20 print-content">
-            {order.deletedAt && (
-                <p className="mx-auto max-w-6xl rounded border-2 border-red-600 py-1 text-center text-lg font-bold text-red-700">
-                    DELETED {memoDate(order.deletedAt)}{order.deletedBy ? ` by ${order.deletedBy}` : ""}
-                </p>
-            )}
-            <h2 className="text-center pt-5 font-semibold text-xl -ml-3">{MEMO_TITLE[order.type] || "Cash Memo"}</h2>
-            <div className="bg-white px-20 rounded-lg mt-2 max-w-6xl mx-auto">
-                <div className="grid grid-cols-3 gap-2 items-start mb-1">
-                    <div className="">
-                        <h2 className="text-lg font-normal">Customer Profile</h2>
-                        <p className="text-sm">
-                            <span className="">ID:</span> {order?.customerID}
-                        </p>
-                        <p className="text-sm">
-                            <span className="">Name:</span> {order?.name}
-                        </p>
-                        <p className="text-sm">
-                            <span className="">Mobile:</span> {formatContactForDisplay(order?.contact)}
-                        </p>
-                        <p className="text-sm">
-                            <span className="">Company:</span> {order?.company}
-                        </p>
-                        <p className="text-sm mb-2">
-                            <span className="">Address:</span> {order?.address}
-                        </p>
+        <div className="memo-page print-content">
+            <div className="memo-sheet">
+                {order.deletedAt && (
+                    <p className="memo-deleted">
+                        DELETED {memoDate(order.deletedAt)}{order.deletedBy ? ` by ${order.deletedBy}` : ""} · এই মেমো বাতিল
+                    </p>
+                )}
+
+                {/* Header */}
+                <header className="memo-head">
+                    <div className="memo-brand">
+                        <img src="/logo.png" alt="" className="memo-logo" />
+                        <div>
+                            <h1>Sylhet Gold Hallmark Center</h1>
+                            <p className="memo-bn">সিলেট গোল্ড হলমার্ক সেন্টার</p>
+                            {site && <p className="memo-site">{site}</p>}
+                        </div>
                     </div>
-                    <div >
-                        {photo && <img className="w-11/12" src={photo} alt="" />}
-                    </div>
-                    <div className="ml-2 mt-20">
-                        <p className="text-sm">
-                            <span className="">Memo No:</span> {order?.voucher ?? "N/A"}
+                    <div className="memo-no">
+                        <p className="memo-title">{MEMO_TITLE[order.type] || "Cash Memo"}</p>
+                        <p className="memo-label">Memo No</p>
+                        <p className="memo-number">{order.voucher ?? "N/A"}</p>
+                        <p className="memo-date">
+                            {order.createdAt ? `${memoDate(order.createdAt)}, ${memoTime(order.createdAt)}` : "N/A"}
                         </p>
-                        <p className="text-sm">
-                            <span className="">Date:</span>{" "}
-                            {order?.createdAt ? `${memoDate(order.createdAt)}, ${memoTime(order.createdAt)}` : "N/A"}
-                        </p>
-                        {order?.customerFrom && order?.createdAt && deliveryDay(order.customerFrom) !== memoDate(order.createdAt) && (
-                            <p className="text-sm">
-                                <span className="">Delivery:</span> {deliveryDay(order.customerFrom)}
-                            </p>
+                        {order.customerFrom && order.createdAt && deliveryDay(order.customerFrom) !== memoDate(order.createdAt) && (
+                            <p className="memo-date">Delivery: <b>{deliveryDay(order.customerFrom)}</b></p>
                         )}
                     </div>
+                </header>
 
-                </div>
+                {/* Customer */}
+                <section className="memo-customer">
+                    <dl>
+                        <dt>Customer ID</dt><dd>{order.customerID}</dd>
+                        <dt>Name</dt><dd className="font-semibold">{order.name}</dd>
+                        <dt>Mobile</dt><dd>{formatContactForDisplay(order.contact)}</dd>
+                        <dt>Shop</dt><dd>{order.company || "—"}</dd>
+                        <dt>Address</dt><dd>{order.address || "—"}</dd>
+                    </dl>
+                    <div className="memo-photo">
+                        {photo && <img src={photo} alt="" />}
+                    </div>
+                </section>
 
-                <h2 className="text-md font-bold">Order Details</h2>
-                <table className="w-full border-collapse border border-gray-600 text-left">
-                    <thead className="bg-gray-100">
+                {/* Items */}
+                <table className="memo-items">
+                    <thead>
                         <tr>
-                            <th className="border border-gray-600 text-sm px-4 py-2">Item Name</th>
-                            <th className="border border-gray-600 text-sm px-4 py-2">Quantity</th>
-                            <th className="border border-gray-600 text-sm px-4 py-2">Rate (BDT)</th>
-                            <th className="border border-gray-600 text-sm px-4 py-2">Weight</th>
-                            <th className="border border-gray-600 text-sm px-4 py-2">Hall Mark</th>
-                            <th className="border border-gray-600 text-sm px-4 py-2">Amount</th>
+                            <th className="w-[8mm] text-center">#</th>
+                            <th>Item</th>
+                            <th className="text-right">Qty</th>
+                            <th className="text-right">Weight</th>
+                            <th>Result</th>
+                            <th className="text-right">Rate</th>
+                            <th className="text-right">Amount</th>
                         </tr>
                     </thead>
                     <tbody>
-                        {order.items.map((item, index) => ( // Map over items array
-                            <tr key={index}>
-                                <td className="border border-gray-600 px-4 text-sm py-0">{item.item}</td>
-                                <td className="border border-gray-600 px-4 text-sm py-0">{item.quantity}</td>
-                                <td className="border border-gray-600 px-4 text-sm py-0">{item.rate}</td>
-                                <td className="border border-gray-600 px-4 text-sm py-0">{item.weight === null || item.weight === undefined || item.weight === "" ? "—" : `${item.weight} ${item.weightUnite || ""}`}</td>
-                                <td className="border border-gray-600 px-4 text-sm py-0">{item.xray}</td> {/* Assuming xray applies to all items */}
-                                <td className="border border-gray-600 px-4 text-sm py-0">{item.amount}</td>
-                            </tr>
-                        ))}
+                        {items.length === 0 && (
+                            <tr><td colSpan={7} className="text-center text-gray-600">No items on this memo · এই মেমোতে কোনো গহনা নেই</td></tr>
+                        )}
+                        {items.map((item, index) => {
+                            const result = purityText(item);
+                            return (
+                                <tr key={index}>
+                                    <td className="text-center">{index + 1}</td>
+                                    <td>{item.item}</td>
+                                    <td className="text-right">{item.quantity}</td>
+                                    <td className="text-right whitespace-nowrap">{weightText(item)}</td>
+                                    <td>
+                                        {result ? (
+                                            <>
+                                                <span className="memo-result">{result}</span>
+                                                {item.stamp && <span className="memo-stamp"> {item.stamp}</span>}
+                                                {item.xray && <span className="memo-typed">({item.xray})</span>}
+                                            </>
+                                        ) : (
+                                            item.xray || "—"
+                                        )}
+                                    </td>
+                                    <td className="text-right">{money(item.rate)}</td>
+                                    <td className="text-right">{money(item.amount)}</td>
+                                </tr>
+                            );
+                        })}
                     </tbody>
                 </table>
 
-                <div className="flex justify-between items-center mt-1">
-                    <div>
-                        <p className="text-sm font-bold">
-                            <span className="text-sm font-normal">Total Amount:</span> {order.totalAmount} BDT
-                        </p>
-                        <p className="text-sm font-bold">
-                            <span className="text-sm font-normal">Paid Amount:</span> {money(paidOf(order))} BDT
-                        </p>
-                        {order.totalAmount - paidOf(order) > 0 && (
-                            <p className="text-sm font-bold">
-                                <span className="text-sm font-normal">Due:</span> {money(order.totalAmount - paidOf(order))} BDT
-                            </p>
-                        )}
+                {/* Money + check online */}
+                <section className="memo-bottom">
+                    <div className="memo-money">
+                        <div><span>Total</span><b>{money(order.totalAmount)} BDT</b></div>
+                        <div><span>Paid</span><b>{money(paid)} BDT</b></div>
+                        {due > 0 && <div className="memo-due"><span>Due · বাকি</span><b>{money(due)} BDT</b></div>}
                         {balance && balance.due > 0 && (
-                            <p className="text-xs">Customer&apos;s total due (all memos): {money(balance.due)} BDT</p>
+                            <p className="memo-note">Customer&apos;s total due (all memos): {money(balance.due)} BDT</p>
                         )}
-                        {order.editedAt && (
-                            <p className="text-xs text-gray-600">Edited {memoDate(order.editedAt)}</p>
-                        )}
+                        {order.editedAt && <p className="memo-note">Edited {memoDate(order.editedAt)}</p>}
                     </div>
                     {qr && (
-                        <div className="flex items-center gap-2">
-                            <div className="text-right text-xs leading-tight">
-                                <p className="font-semibold">Scan for the online report</p>
-                                <p>Report code: <span className="font-mono text-sm font-bold tracking-widest">{order.reportCode}</span></p>
+                        <div className="memo-check">
+                            <img src={qr} alt="Report QR code" className="memo-qr" />
+                            <div>
+                                <p className="memo-check-title">Check this memo online</p>
+                                <p className="memo-check-bn">স্ক্যান করে রিপোর্ট দেখুন</p>
+                                {lookup && (
+                                    <p className="memo-check-how">
+                                        Or open <b>{lookup}</b> and type
+                                        memo <b>{order.voucher}</b>, code <b className="memo-code">{order.reportCode}</b>
+                                    </p>
+                                )}
                             </div>
-                            <img src={qr} alt="Report QR code" className="h-20 w-20" />
                         </div>
                     )}
-                </div>
+                </section>
 
-                <div className="flex justify-between items-center mt-6">
-                    <div className="border-t border-gray-600 text-center px-4">
-                        <p className="text-sm">Customer Signature</p>
-                    </div>
-                    <div className="border-t border-gray-600 text-center px-4">
-                        <p className="text-sm">Authorized Signature</p>
-                    </div>
-                </div>
+                {/* Signatures */}
+                <section className="memo-sign">
+                    <div><span>Customer Signature</span></div>
+                    <div><span>Authorized Signature</span></div>
+                </section>
+                <p className="memo-thanks">Thank you · ধন্যবাদ</p>
             </div>
-
         </div>
     );
 
