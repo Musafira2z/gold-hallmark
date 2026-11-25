@@ -32,9 +32,13 @@ services:
       SYNC_URL: ${SYNC_URL:-}
       SYNC_KEY: ${SYNC_KEY:-}
       REPORT_BASE_URL: ${REPORT_BASE_URL:-}
+      # Owner's phone app (Plan 19): shows the app version and the newest backup.
+      APP_VERSION: ${APP_VERSION:-}
+      BACKUP_DIR: /backups
     volumes:
       # Photos stay in a folder on the PC, so an update never loses them (BUGS D12)
       - ${UPLOADS_HOST_DIR:-./uploads}:/app/uploads
+      - ${BACKUP_HOST_DIR:-./backups}:/backups:ro   # only read: newest backup time for the owner's phone
     depends_on:
       - mongo
 

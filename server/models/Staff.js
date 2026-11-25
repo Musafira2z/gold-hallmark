@@ -8,6 +8,10 @@ const staffSchema = new mongoose.Schema({
     role: { type: String, enum: ["owner", "staff"], default: "staff" },
     active: { type: Boolean, default: true },
     lastLoginAt: Date,
+    // Owner's phone app (Plan 19): only a salted hash of the code; never sent to the browser.
+    ownerAppCodeHash: { type: String, select: false },
+    ownerAppCodeSetAt: Date, // when the current code was made (also: "has had a code")
+    ownerAppOffAt: Date,     // turned off
 }, { timestamps: true });
 
 module.exports = mongoose.model("Staff", staffSchema);

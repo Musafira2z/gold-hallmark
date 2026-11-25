@@ -6,6 +6,9 @@ const Report = require("./models/Report");
 const Account = require("./models/Account");
 const Payment = require("./models/Payment");
 const { mountPortal } = require("./portal");
+const { mountOwner } = require("./owner");
+const Owner = require("./models/Owner");
+const Heartbeat = require("./models/Heartbeat");
 const { reportPage, notFoundPage, lookupPage } = require("./views/pages");
 
 const TOKEN_RE = /^[A-Za-z0-9]{12}$/;
@@ -106,6 +109,26 @@ const cleanAccount = (a) => {
     };
 };
 
+// The owner's phone app login (Plan 19). codeHash null = off.
+const cleanOwner = (o) => {
+    if (!o || typeof o !== "object" || !OBJECT_ID_RE.test(String(o.id))) return null;
+    const hash = typeof o.codeHash === "string" && /^sha256\$[a-f0-9]{32}\$[a-f0-9]{64}$/.test(o.codeHash) ? o.codeHash : null;
+    return { shopStaffId: String(o.id), name: text(o.name, 100), codeHash: hash, codeSetAt: toDate(o.codeSetAt) };
+};
+
+// The PC's heartbeat (Plan 19).
+const cleanHeartbeat = (b) => {
+    if (!b || typeof b !== "object") return null;
+    const bk = b.backup && typeof b.backup === "object" ? b.backup : null;
+    const waiting = toNum(b.waiting);
+    return {
+        at: toDate(b.at),
+        version: text(b.version, 40),
+        waiting: waiting !== null && waiting >= 0 ? Math.floor(waiting) : 0,
+        backup: bk && toDate(bk.at) ? { name: text(bk.name, 100), at: toDate(bk.at), size: toNum(bk.size) ?? 0 } : null,
+    };
+};
+
 // A later payment from the shop (Plan 18).
 const cleanPayment = (p) => {
     if (!p || typeof p !== "object" || !OBJECT_ID_RE.test(String(p.id)) || !CUSTOMER_RE.test(String(p.customerID))) return null;
@@ -129,6 +152,7 @@ const createApp = ({
     limiter = createGuessLimiter(),
     loginIpLimiter = createGuessLimiter({ max: 20 }),
     loginPhoneLimiter = createGuessLimiter({ max: 5 }),
+    ownerLimiter = createGuessLimiter({ max: 10 }),
     trustProxy = false,
 } = {}) => {
     if (!syncKey || syncKey.length < 24) throw new Error("SYNC_KEY must be set (at least 24 characters).");
@@ -188,9 +212,23 @@ const createApp = ({
     };
     receive("/api/sync/accounts", "accounts", cleanAccount, Account, "shopUserId");
     receive("/api/sync/payments", "payments", cleanPayment, Payment, "shopPaymentId");
+    receive("/api/sync/owners", "owners", cleanOwner, Owner, "shopStaffId");
+
+    // The PC is alive (Plan 19). One document; our clock says when we heard from it.
+    app.post("/api/sync/heartbeat", express.json({ limit: "10kb" }), async (req, res) => {
+        const auth = req.get("authorization") || "";
+        const given = auth.startsWith("Bearer ") ? auth.slice(7) : "";
+        if (!given || !sameSecret(given, syncKey)) return res.status(401).json({ error: "Wrong sync key" });
+        const beat = cleanHeartbeat(req.body);
+        if (!beat) return res.status(400).json({ error: "Bad heartbeat" });
+        await Heartbeat.updateOne({ _id: "pc" }, { $set: { ...beat, receivedAt: new Date() } }, { upsert: true });
+        res.json({ ok: true });
+    });
 
     // Karigor / shop owner login and pages (Plan 18).
     mountPortal(app, { ipLimiter: loginIpLimiter, phoneLimiter: loginPhoneLimiter });
+    // Owner's phone app (Plan 19).
+    mountOwner(app, { limiter: ownerLimiter });
 
     // QR on the memo opens this.
     app.get("/r/:token", async (req, res) => {
@@ -230,4 +268,4 @@ const createApp = ({
     return app;
 };
 
-module.exports = { createApp, createGuessLimiter, cleanIncoming, cleanAccount, cleanPayment };
+module.exports = { createApp, createGuessLimiter, cleanIncoming, cleanAccount, cleanPayment, cleanOwner, cleanHeartbeat };

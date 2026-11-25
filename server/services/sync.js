@@ -6,6 +6,8 @@
 //   orders    every order with a report link (the public report + the customer portal)
 //   payments  later payments (portal: dues)
 //   accounts  customers who have, or had, an online login PIN (portal login)
+//   owners    the owner's phone app code (Plan 19)
+// After each good round the PC also sends a heartbeat: alive, version, newest backup.
 // Settings (all optional; without SYNC_URL + SYNC_KEY sync is off):
 //   SYNC_URL            e.g. https://sylhethallmark.com
 //   SYNC_KEY            the shared secret, same as on the website
@@ -13,6 +15,8 @@
 const Order = require("../models/Order");
 const Payment = require("../models/Payment");
 const User = require("../models/User");
+const Staff = require("../models/Staff");
+const { heartbeat } = require("./pcHealth");
 const SyncState = require("../models/SyncState");
 const Shop = require("../models/Shop");
 const { loginPhone } = require("./portalPin");
@@ -94,6 +98,14 @@ const toAccount = (u, shopNames = new Map()) => ({
         : [],
 });
 
+// The owner's phone app login (Plan 19). No code hash once it is off, or the account is no longer an active owner.
+const toOwner = (s) => ({
+    id: String(s._id),
+    name: s.name || "",
+    codeHash: s.ownerAppCodeHash && !s.ownerAppOffAt && s.active !== false && s.role === "owner" ? s.ownerAppCodeHash : null,
+    codeSetAt: s.ownerAppCodeSetAt || null,
+});
+
 // Raise a stream's schema when the data it sends changes shape: that stream is sent again once.
 // Orders include the Hall Mark reader version, because a new reader changes purity/stamp
 // on old orders without changing their updatedAt.
@@ -131,6 +143,16 @@ const STREAMS = [
             const names = await shopNamesFor(batch.flatMap((u) => u.portalShops || []));
             return batch.map((u) => toAccount(u, names));
         },
+    },
+    {
+        id: "owners",
+        schema: 1,
+        model: Staff,
+        select: "+ownerAppCodeHash",
+        filter: { ownerAppCodeSetAt: { $exists: true } },
+        path: "/api/sync/owners",
+        key: "owners",
+        prepare: async (batch) => batch.map(toOwner),
     },
 ];
 
@@ -193,6 +215,14 @@ const syncOnce = async () => {
     const sent = {};
     try {
         for (const stream of STREAMS) sent[stream.id] = await sendStream(stream, { url, key });
+        // Heartbeat for the owner's phone: PC alive, version, newest backup (Plan 19).
+        const beat = await fetch(`${url}/api/sync/heartbeat`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` },
+            body: JSON.stringify(await heartbeat()),
+            signal: AbortSignal.timeout(30000),
+        });
+        if (!beat.ok) throw new Error(`Website answered ${beat.status} (heartbeat)`);
         await SyncState.updateOne(
             { _id: "orders" },
             { $set: { lastOkAt: new Date(), lastTryAt: new Date(), lastError: "" } },
@@ -247,4 +277,4 @@ const startSync = () => {
     setInterval(syncOnce, everySeconds * 1000);
 };
 
-module.exports = { startSync, syncOnce, syncStatus, toReport, toAccount, toPayment };
+module.exports = { startSync, syncOnce, syncStatus, toReport, toAccount, toPayment, toOwner };
