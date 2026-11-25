@@ -3,6 +3,9 @@
 const crypto = require("crypto");
 const express = require("express");
 const Report = require("./models/Report");
+const Account = require("./models/Account");
+const Payment = require("./models/Payment");
+const { mountPortal } = require("./portal");
 const { reportPage, notFoundPage, lookupPage } = require("./views/pages");
 
 const TOKEN_RE = /^[A-Za-z0-9]{12}$/;
@@ -11,6 +14,8 @@ const OBJECT_ID_RE = /^[a-f0-9]{24}$/;
 const MAX_BATCH = 500;
 const STATUSES = ["received", "ready", "delivered"];
 const PURITIES = ["24K", "22K", "21K", "18K", "14K", "925"];
+const KINDS = ["shop_owner", "karigor", "other"];
+const CUSTOMER_RE = /^\d{1,10}$/;
 
 // Compare secrets without leaking their length or content through timing.
 const sameSecret = (a, b) => {
@@ -74,7 +79,39 @@ const cleanIncoming = (o) => {
             purity: it && PURITIES.includes(it.purity) ? it.purity : null,
             stamp: text(it && it.stamp, 40),
         })),
+        // Portal only (Plan 18); never on the public page.
+        customerID: CUSTOMER_RE.test(String(o.customerID)) ? String(o.customerID) : "",
+        shopId: OBJECT_ID_RE.test(String(o.shopId)) ? String(o.shopId) : null,
+        broughtBy: text(o.broughtBy, 100),
+        total: toNum(o.total) ?? 0,
+        paid: toNum(o.paid) ?? 0,
     };
+};
+
+// A customer's online login from the shop (Plan 18). pinHash null = login off.
+const cleanAccount = (a) => {
+    if (!a || typeof a !== "object" || !OBJECT_ID_RE.test(String(a.id)) || !CUSTOMER_RE.test(String(a.customerID))) return null;
+    const hash = typeof a.pinHash === "string" && /^scrypt\$[A-Za-z0-9+/=$]{20,200}$/.test(a.pinHash) ? a.pinHash : null;
+    return {
+        shopUserId: String(a.id),
+        customerID: String(a.customerID),
+        name: text(a.name, 100),
+        phone: /^01\d{9}$/.test(String(a.phone)) ? String(a.phone) : "",
+        kind: KINDS.includes(a.kind) ? a.kind : "",
+        pinHash: hash,
+        pinSetAt: toDate(a.pinSetAt),
+        shops: (Array.isArray(a.shops) ? a.shops.slice(0, 20) : [])
+            .filter((s) => s && OBJECT_ID_RE.test(String(s.id)))
+            .map((s) => ({ id: String(s.id), name: text(s.name, 200) })),
+    };
+};
+
+// A later payment from the shop (Plan 18).
+const cleanPayment = (p) => {
+    if (!p || typeof p !== "object" || !OBJECT_ID_RE.test(String(p.id)) || !CUSTOMER_RE.test(String(p.customerID))) return null;
+    const amount = toNum(p.amount);
+    if (amount === null) return null;
+    return { shopPaymentId: String(p.id), customerID: String(p.customerID), amount, at: toDate(p.at), deletedAt: toDate(p.deletedAt) };
 };
 
 const securityHeaders = (_req, res, next) => {
@@ -87,7 +124,13 @@ const securityHeaders = (_req, res, next) => {
     next();
 };
 
-const createApp = ({ syncKey, limiter = createGuessLimiter(), trustProxy = false } = {}) => {
+const createApp = ({
+    syncKey,
+    limiter = createGuessLimiter(),
+    loginIpLimiter = createGuessLimiter({ max: 20 }),
+    loginPhoneLimiter = createGuessLimiter({ max: 5 }),
+    trustProxy = false,
+} = {}) => {
     if (!syncKey || syncKey.length < 24) throw new Error("SYNC_KEY must be set (at least 24 characters).");
     const app = express();
     app.disable("x-powered-by");
@@ -120,6 +163,34 @@ const createApp = ({ syncKey, limiter = createGuessLimiter(), trustProxy = false
         }
         res.json({ saved: valid.length, skipped: docs.length - valid.length });
     });
+
+    // Shop PC -> here, for the portal (Plan 18). Saved by the shop's id, so repeats are harmless.
+    const receive = (path, listKey, clean, Model, idField) => {
+        app.post(path, express.json({ limit: "5mb" }), async (req, res) => {
+            const auth = req.get("authorization") || "";
+            const given = auth.startsWith("Bearer ") ? auth.slice(7) : "";
+            if (!given || !sameSecret(given, syncKey)) return res.status(401).json({ error: "Wrong sync key" });
+            const list = req.body && req.body[listKey];
+            if (!Array.isArray(list) || list.length > MAX_BATCH) {
+                return res.status(400).json({ error: `Send '${listKey}' as a list of at most ${MAX_BATCH}` });
+            }
+            const now = new Date();
+            const docs = list.map(clean);
+            const valid = docs.filter(Boolean);
+            if (valid.length > 0) {
+                await Model.bulkWrite(
+                    valid.map((doc) => ({ updateOne: { filter: { [idField]: doc[idField] }, update: { $set: { ...doc, syncedAt: now } }, upsert: true } })),
+                    { ordered: false }
+                );
+            }
+            res.json({ saved: valid.length, skipped: docs.length - valid.length });
+        });
+    };
+    receive("/api/sync/accounts", "accounts", cleanAccount, Account, "shopUserId");
+    receive("/api/sync/payments", "payments", cleanPayment, Payment, "shopPaymentId");
+
+    // Karigor / shop owner login and pages (Plan 18).
+    mountPortal(app, { ipLimiter: loginIpLimiter, phoneLimiter: loginPhoneLimiter });
 
     // QR on the memo opens this.
     app.get("/r/:token", async (req, res) => {
@@ -159,4 +230,4 @@ const createApp = ({ syncKey, limiter = createGuessLimiter(), trustProxy = false
     return app;
 };
 
-module.exports = { createApp, createGuessLimiter, cleanIncoming };
+module.exports = { createApp, createGuessLimiter, cleanIncoming, cleanAccount, cleanPayment };

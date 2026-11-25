@@ -12,6 +12,10 @@ router.post("/:id/restore", requireOwner, userController.restoreUser);
 router.get("/lastCustomerID", userController.getLastCustomerID);
 router.get("/:customerID/profile", userController.getCustomerProfile);
 router.put("/:customerID/kind", userController.setCustomerKind); // customer type (staff + owner)
+// Online login for the portal (Plan 18), staff + owner
+router.post("/:customerID/portal/pin", userController.makePortalPin);
+router.post("/:customerID/portal/off", userController.portalOff);
+router.put("/:customerID/portal/shops", userController.setPortalShops);
 
 router.use((err, _req, res, next) => {
     if (err instanceof multer.MulterError) {

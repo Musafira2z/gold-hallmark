@@ -6,6 +6,7 @@ import { apiUrl } from "../context/UserContext.jsx";
 import { formatContactForDisplay } from "../utils/formatContact.js";
 import UpdateUserModal from "../components/UpdateUserModal.jsx";
 import CustomerPayments from "../components/CustomerPayments.jsx";
+import CustomerPortal from "../components/CustomerPortal.jsx";
 import AuthImage from "../components/AuthImage.jsx";
 
 const TZ = "Asia/Dhaka";
@@ -289,6 +290,18 @@ const CustomerProfile = () => {
             </div>
 
             <CustomerPayments customerID={customerID} balance={profile.balance} />
+
+            {profile.portal && (
+                <CustomerPortal
+                    customer={customer}
+                    portal={profile.portal}
+                    shopChoices={[
+                        ...profile.portal.shops,
+                        ...companies.filter((c) => !profile.portal.shops.some((s) => s.id === c.id)).map((c) => ({ id: c.id, name: c.name })),
+                    ]}
+                    onChange={loadProfile}
+                />
+            )}
 
             <div className="grid grid-cols-1 xl:grid-cols-3 gap-5">
                 {/* Order history */}

@@ -2,7 +2,7 @@
   "name": "gold-hallmark-online",
   "version": "1.0.0",
   "private": true,
-  "description": "Online mirror of the shop app: public test reports (later: customer login, owner dashboard).",
+  "description": "Online mirror of the shop app: public test reports, karigor / shop owner portal (later: owner dashboard).",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",

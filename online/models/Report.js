@@ -1,7 +1,8 @@
 const mongoose = require("mongoose");
 
 // One test report = one order from the shop, copied here by the sync.
-// Only what the public report needs: no phone, bill, payments or dues.
+// The public report page shows only the test. customerID, shopId, broughtBy, total and paid
+// are for the logged-in portal (Plan 18) and never appear on the public page. No phone.
 const itemSchema = new mongoose.Schema({
     item: String,
     quantity: Number,
@@ -26,9 +27,16 @@ const reportSchema = new mongoose.Schema({
     status: String,  // received | ready | delivered
     readyAt: Date,
     items: [itemSchema],
+    customerID: String,  // who brought it (portal: "my tests", dues)
+    shopId: String,      // shop record on the PC (portal: shop owner's shops)
+    broughtBy: String,   // name of who brought it (shown to the shop owner)
+    total: Number,       // bill (portal, own orders only)
+    paid: Number,        // paid at the counter
     syncedAt: Date,
 }, { versionKey: false });
 
 reportSchema.index({ voucher: 1, reportCode: 1 });
+reportSchema.index({ customerID: 1, orderedAt: -1 });
+reportSchema.index({ shopId: 1, orderedAt: -1 });
 
 module.exports = mongoose.model("Report", reportSchema);

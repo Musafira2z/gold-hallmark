@@ -53,7 +53,9 @@ footer{color:var(--muted);font-size:13px;text-align:center;padding:8px 0 24px}
 a{color:var(--gold)}
 `;
 
-const layout = (title, body) => `<!doctype html>
+const DEFAULT_FOOTER = `<a href="/report">Check another report · অন্য রিপোর্ট দেখুন</a> · <a href="/login">Karigor / shop login · লগইন</a>`;
+
+const layout = (title, body, footer = DEFAULT_FOOTER) => `<!doctype html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex,nofollow">
@@ -62,7 +64,7 @@ const layout = (title, body) => `<!doctype html>
 <body><main>
 <header><div class="brand">${CENTER}</div><div class="bn">সিলেট গোল্ড হলমার্ক সেন্টার</div></header>
 ${body}
-<footer><a href="/report">Check another report · অন্য রিপোর্ট দেখুন</a></footer>
+<footer>${footer}</footer>
 </main></body></html>`;
 
 const statusBox = (r) => {
@@ -125,4 +127,4 @@ ${error ? `<p class="error">${esc(error)}</p>` : ""}
 
 const lookupPage = (opts) => layout("Find a report", lookupForm(opts));
 
-module.exports = { reportPage, notFoundPage, lookupPage, esc };
+module.exports = { reportPage, notFoundPage, lookupPage, esc, day, time, layout, PURITY, TYPE_LABEL };
