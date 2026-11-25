@@ -10,7 +10,7 @@ cd /repo/desktop
 CDP=/repo/desktop/e2e/cdp.js
 export GOLD_DATA_DIR=/gold
 rm -rf /gold
-mkdir -p mongo && cp "$(command -v mongod)" mongo/mongod && trap "rm -rf /repo/desktop/mongo" EXIT
+mkdir -p mongo && for t in mongod mongodump mongorestore; do cp "$(command -v $t)" mongo/; done && trap "rm -rf /repo/desktop/mongo" EXIT
 PASS=0; FAIL=0
 ok() { echo "PASS: $1"; PASS=$((PASS+1)); }
 bad() { echo "FAIL: $1"; FAIL=$((FAIL+1)); }
@@ -19,7 +19,7 @@ API=http://127.0.0.1:47111; UI=http://127.0.0.1:47110
 APP=""
 launch() { xvfb-run -a npx electron --no-sandbox --remote-debugging-port=9333 . >/tmp/electron.out 2>&1 & APP=$!; }
 launches=0
-ready() { launches=$((launches+1)); for i in $(seq 1 120); do [ "$(grep -c "Ready." /gold/logs/app.log 2>/dev/null)" -ge "$launches" ] && return 0; grep -q "ERROR" /gold/logs/app.log 2>/dev/null && return 1; sleep 1; done; return 1; }
+ready() { launches=$((launches+1)); for i in $(seq 1 120); do [ "$(grep -c "Ready." /gold/logs/app.log 2>/dev/null)" -ge "$launches" ] && return 0; grep -qE "^[^ ]+ ERROR:" /gold/logs/app.log 2>/dev/null && break; sleep 1; done; echo "--- app.log ---"; tail -6 /gold/logs/app.log; return 1; }
 gone() { for i in $(seq 1 60); do pgrep -f "electron --no-sandbox" >/dev/null || return 0; sleep 1; done; return 1; }
 quit() { node $CDP closeall >/dev/null 2>&1; gone; }          # a person closing every window
 stopsig() { pkill -TERM -f "dist/electron --no-sandbox --remote"; gone; }   # Windows shutting down
