@@ -5,6 +5,7 @@ import { apiUrl } from "../context/UserContext.jsx";
 import { useAuth } from "../context/AuthContext.jsx";
 import { Button, Card, ErrorBox, Loading, PageHeader } from "../components/ui/index.jsx";
 import { formatDay, formatTime } from "../utils/format.js";
+import OwnerPhoneApp from "../components/OwnerPhoneApp.jsx";
 
 const field = "rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200";
 
@@ -66,6 +67,8 @@ function Staff() {
     return (
         <div className="space-y-5">
             <PageHeader title="Staff accounts" subtitle="Owner can do everything. Staff can take and edit orders, but can't delete." />
+
+            <OwnerPhoneApp />
 
             <Card title="Add an account">
                 <form onSubmit={add} className="flex flex-wrap items-end gap-3">

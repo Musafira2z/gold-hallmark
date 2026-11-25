@@ -5,6 +5,7 @@ const Staff = require("../models/Staff");
 const AuditLog = require("../models/AuditLog");
 const auth = require("../services/authService");
 const { audit } = require("../services/audit");
+const { makeCode, hashCode } = require("../services/ownerCode");
 
 const router = express.Router();
 
@@ -71,6 +72,46 @@ router.put("/staff/:id", async (req, res) => {
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: "Could not update the account" });
+    }
+});
+
+// ---- Owner's phone app (Plan 19). For the owner who is logged in. ----
+const ownerAppUrl = () => {
+    const base = (process.env.REPORT_BASE_URL || "").trim().replace(/\/+$/, "");
+    return base ? `${base}/owner` : "";
+};
+
+router.get("/owner-app", async (req, res) => {
+    const me = await Staff.findById(req.staff._id).lean();
+    res.json({ on: Boolean(me && me.ownerAppCodeSetAt && !me.ownerAppOffAt), setAt: me?.ownerAppCodeSetAt || null, url: ownerAppUrl() });
+});
+
+// A new code, shown once. The old code (if any) stops and its phones are logged out.
+router.post("/owner-app/code", async (req, res) => {
+    try {
+        const me = await Staff.findById(req.staff._id).lean();
+        if (!me) return res.status(404).json({ error: "Account not found" });
+        const code = makeCode();
+        await Staff.updateOne({ _id: me._id }, { $set: { ownerAppCodeHash: hashCode(code), ownerAppCodeSetAt: new Date() }, $unset: { ownerAppOffAt: 1 } });
+        const had = Boolean(me.ownerAppCodeSetAt && !me.ownerAppOffAt);
+        await audit(req, "owner.app", me._id, `${me.username}: ${had ? "new phone app code (old one stopped)" : "phone app turned on"}`);
+        res.set("Cache-Control", "no-store").json({ code, url: ownerAppUrl() });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: "Could not make the code" });
+    }
+});
+
+router.post("/owner-app/off", async (req, res) => {
+    try {
+        const me = await Staff.findById(req.staff._id).lean();
+        if (!me || !me.ownerAppCodeSetAt || me.ownerAppOffAt) return res.status(400).json({ error: "The phone app is not on." });
+        await Staff.updateOne({ _id: me._id }, { $set: { ownerAppOffAt: new Date() }, $unset: { ownerAppCodeHash: 1 } });
+        await audit(req, "owner.app", me._id, `${me.username}: phone app turned off`);
+        res.json({ ok: true });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: "Could not turn it off" });
     }
 });
 
