@@ -67,3 +67,14 @@ exports.getCustomerProfile = async (customerID) => {
     const [stats, balance] = await Promise.all([getCustomerStats(id), customerBalance(id)]);
     return { customer, stats, balance };
 };
+
+// Customer type (Plan 16). Returns { customer, before } or null if there is no such customer.
+exports.setCustomerKind = async (customerID, kind) => {
+    const id = Number(customerID);
+    if (!Number.isSafeInteger(id)) return null;
+    const before = await User.findOne({ customerID: id, deletedAt: null }, { kind: 1 }).lean();
+    if (!before) return null;
+    const update = kind ? { $set: { kind } } : { $unset: { kind: 1 } };
+    const customer = await User.findOneAndUpdate({ _id: before._id }, update, { new: true }).lean();
+    return { customer, before: before.kind };
+};

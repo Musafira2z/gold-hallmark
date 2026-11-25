@@ -4,6 +4,7 @@ const { dayRange } = require("./orderSummary");
 const { nextVoucher, syncVoucherCounter } = require("./memoNumber");
 const { newReportToken, newReportCode } = require("./reportLink");
 const { withPurity, PARSE_VERSION } = require("./hallmarkText");
+const { resolveShop } = require("./shopService");
 const { normalizePhone } = require("../utils/phone");
 
 const round2 = (n) => Math.round(n * 100) / 100;
@@ -84,7 +85,10 @@ exports.updateOrder = async (id, { items, company }) => {
     order.items = withPurity(prepared.items);
     order.parseV = PARSE_VERSION;
     order.totalAmount = prepared.total;
-    if (company !== undefined) order.company = company.trim();
+    if (company !== undefined) {
+        order.company = company.trim();
+        order.shopId = await resolveShop(order.company);
+    }
     order.editedAt = new Date();
     return order.save();
 };
@@ -95,7 +99,7 @@ exports.createOrder = async (orderData, items, file) => { // Add items parameter
     const imagePath = file ? `/uploads/${file.filename}` : null; // Or your cloud storage logic
     // The server gives the memo number; anything the browser sent is ignored (BUGS D2).
     // eslint-disable-next-line no-unused-vars
-    const { voucher: _ignored, paidAmount: paidRaw, reportToken: _t, reportCode: _c, status: _s, readyAt: _r, deliveredAt: _d, statusBy: _b, parseV: _p, ...data } = orderData;
+    const { voucher: _ignored, paidAmount: paidRaw, reportToken: _t, reportCode: _c, status: _s, readyAt: _r, deliveredAt: _d, statusBy: _b, parseV: _p, shopId: _shop, ...data } = orderData;
 
     // Amounts worked out here (quantity x rate), the same way as when editing an order.
     const cleaned = cleanItems(items).map((it) =>
@@ -120,6 +124,7 @@ exports.createOrder = async (orderData, items, file) => { // Add items parameter
                 items: withPurity(cleaned), // numbers only; bad values become null; + purity/stamp
                 parseV: PARSE_VERSION,
                 status: "received",
+                shopId: await resolveShop(data.company),
                 totalAmount: total,
                 paidAmount: paid,
                 image: imagePath,
@@ -230,12 +235,13 @@ exports.restoreOrder = async (id) =>
 // Returns { orders, total, amount, page, pages, limit }.
 const escapeRegex = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
-exports.queryOrders = async ({ customerID, month, day, company, type, q, deleted, status, page = 1, limit = 50 }) => {
+exports.queryOrders = async ({ customerID, month, day, company, shop, type, q, deleted, status, page = 1, limit = 50 }) => {
     // deleted: "only" = just the deleted ones (owner); otherwise deleted ones are left out.
     const query = deleted === "only" ? { deletedAt: { $ne: null } } : { ...NOT_DELETED };
     Object.assign(query, statusQuery(status));
     if (customerID !== undefined) query.customerID = String(customerID);
     if (company !== undefined) query.company = company;
+    if (shop !== undefined) query.shopId = shop;
     if (type !== undefined) query.type = type;
     if (month !== undefined) {
         const range = monthRange(month);

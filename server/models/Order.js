@@ -16,7 +16,8 @@ const itemSchema = new mongoose.Schema({  // Schema for individual items
 const orderSchema = new mongoose.Schema({
     name: String,
     customerID: String,
-    company: String,
+    company: String,  // shop name as typed
+    shopId: { type: mongoose.Schema.Types.ObjectId, ref: "Shop" }, // the shop record (Plan 16); null = no shop
     contact: String, // text, so the leading 0 is kept (was Number: BUGS D1)
     address: String,
     items: [itemSchema], // Array of item subdocuments
@@ -53,6 +54,7 @@ const orderSchema = new mongoose.Schema({
 // Indexes only speed up lookups; they do not change any stored data.
 orderSchema.index({ customerID: 1, createdAt: -1 }); // customer profile / history
 orderSchema.index({ createdAt: -1 });                // day summary, newest first
+orderSchema.index({ shopId: 1, createdAt: -1 });     // a shop's orders
 orderSchema.index({ status: 1, createdAt: -1 });     // "waiting for pickup"
 orderSchema.index({ updatedAt: 1, _id: 1 });         // online sync: what changed since last time
 orderSchema.index({ reportToken: 1 }, { unique: true, partialFilterExpression: { reportToken: { $type: "string" } } });

@@ -8,6 +8,7 @@
 //   SYNC_EVERY_SECONDS  default 60
 const Order = require("../models/Order");
 const SyncState = require("../models/SyncState");
+const Shop = require("../models/Shop");
 
 const BATCH = 200;
 const SETTLE_MS = 5000; // stay 5 s behind the clock so a save in progress is never skipped
@@ -15,7 +16,7 @@ const STATE_ID = "orders";
 // Raise when the data sent to the website changes shape: everything is sent again once.
 // The Hall Mark reader version is part of it, because a new reader changes purity/stamp
 // on old orders without changing their updatedAt.
-const SYNC_SCHEMA = 2 * 100 + require("./hallmarkText").PARSE_VERSION;
+const SYNC_SCHEMA = 3 * 100 + require("./hallmarkText").PARSE_VERSION; // 3: clean shop names
 const EPOCH = new Date(0);
 
 const settings = () => ({
@@ -31,13 +32,13 @@ const itemsOf = (o) => {
 };
 
 // Only what the public report needs. No phone, bill, payments or dues.
-const toReport = (o) => ({
+const toReport = (o, shopNames = new Map()) => ({
     id: String(o._id),
     reportToken: o.reportToken,
     reportCode: o.reportCode,
     voucher: o.voucher ?? null,
     type: o.type || "",
-    company: o.company || "",
+    company: (o.shopId && shopNames.get(String(o.shopId))) || (o.shopId === null ? "" : o.company || ""),
     createdAt: o.createdAt,
     updatedAt: o.updatedAt,
     editedAt: o.editedAt || null,
@@ -89,10 +90,12 @@ const syncOnce = async () => {
                 .limit(BATCH)
                 .lean();
             if (batch.length > 0) {
+                const ids = [...new Set(batch.map((o) => o.shopId).filter(Boolean).map(String))];
+                const shopNames = new Map((await Shop.find({ _id: { $in: ids } }, { name: 1 }).lean()).map((s) => [String(s._id), s.name]));
                 const res = await fetch(`${url}/api/sync/orders`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` },
-                    body: JSON.stringify({ orders: batch.map(toReport) }),
+                    body: JSON.stringify({ orders: batch.map((o) => toReport(o, shopNames)) }),
                     signal: AbortSignal.timeout(30000),
                 });
                 if (!res.ok) throw new Error(`Website answered ${res.status}`);

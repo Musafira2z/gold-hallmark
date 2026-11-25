@@ -12,6 +12,8 @@ import { searchCustomers } from "../utils/customerSearch.js";
 import { useAuth } from "../context/AuthContext.jsx";
 
 const PAGE_SIZE = 50;
+const KIND_LABEL = { shop_owner: "Shop owner", karigor: "Karigor", other: "Other" };
+
 export function CustomerDetailTable({ customers, onRemoveCustomer }) {
     const [selectedCustomerId, setSelectedCustomerId] = useState(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -120,7 +122,7 @@ export function CustomerDetailTable({ customers, onRemoveCustomer }) {
                                 </td>
                             </tr>
                         ) : (
-                            visible.map(({ _id, customerID, name, contact, image, address }) => {
+                            visible.map(({ _id, customerID, name, contact, image, address, kind }) => {
                                 const photoClass = "w-12 h-12 rounded-full object-cover border-2 border-gray-200 group-hover:border-blue-400 transition-colors shadow-sm";
 
                                 return (
@@ -148,7 +150,12 @@ export function CustomerDetailTable({ customers, onRemoveCustomer }) {
                                                     >
                                                         {name}
                                                     </Link>
-                                                    <p className="text-xs text-gray-400">Customer ID: {customerID}</p>
+                                                    <p className="text-xs text-gray-400">
+                                                        Customer ID: {customerID}
+                                                        {KIND_LABEL[kind] && (
+                                                            <span className="ml-2 rounded-full bg-blue-50 px-2 py-0.5 font-semibold text-blue-800">{KIND_LABEL[kind]}</span>
+                                                        )}
+                                                    </p>
                                                     {address && (
                                                         <p className="text-xs text-gray-500 flex items-center gap-1 mt-0.5">
                                                             <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">

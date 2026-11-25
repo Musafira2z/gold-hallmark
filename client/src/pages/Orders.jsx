@@ -22,6 +22,8 @@ function Orders() {
     const month = params.get("month") || "";
     const type = params.get("type") || "";
     const status = params.get("status") || "";
+    const shop = params.get("shop") || "";
+    const shopName = params.get("shopName") || "";
     const q = params.get("q") || "";
     const page = Math.max(1, Number(params.get("page")) || 1);
 
@@ -56,6 +58,7 @@ function Orders() {
             else if (month) query.month = month;
             if (type) query.type = type;
             if (status) query.status = status;
+            if (shop) query.shop = shop;
             if (q) query.q = q;
             if (showDeleted) query.deleted = "only";
             const res = await axios.get(`${apiUrl}/orders`, { params: query });
@@ -66,7 +69,7 @@ function Orders() {
         } finally {
             setLoading(false);
         }
-    }, [day, month, type, q, status, page, showDeleted]);
+    }, [day, month, type, q, status, shop, page, showDeleted]);
 
     useEffect(() => {
         load();
@@ -150,6 +153,11 @@ function Orders() {
                         <option value="ready">Ready</option>
                         <option value="delivered">Delivered</option>
                     </select>
+                    {shop && (
+                        <button type="button" className={chip(true)} onClick={() => update({ shop: "", shopName: "" })} aria-label="Remove shop filter">
+                            Shop: {shopName || "selected"} ×
+                        </button>
+                    )}
                     {isOwner && (
                         <button type="button" className={`${chip(showDeleted)} ml-auto`} onClick={() => update({ deleted: showDeleted ? "" : "only" })}>
                             {showDeleted ? "← Back to orders" : "Deleted"}
