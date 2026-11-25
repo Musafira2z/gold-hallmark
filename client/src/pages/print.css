@@ -1,34 +1,163 @@
-/* This will hide everything else during printing */
+/* The A4 memo (Plan 20). The sheet is A4 on screen and on paper. */
+.memo-page {
+  min-height: 100vh;
+  background: #e5e7eb;
+  padding: 24px 0;
+  color: #111827;
+  font-family: ui-sans-serif, system-ui, "Segoe UI", "Noto Sans Bengali", "Nirmala UI", sans-serif;
+}
+.memo-sheet {
+  box-sizing: border-box;
+  width: 210mm;
+  min-height: 297mm;
+  margin: 0 auto;
+  padding: 12mm 12mm 10mm;
+  background: #fff;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
+  font-size: 10.5pt;
+  line-height: 1.35;
+}
+.memo-deleted {
+  margin: 0 0 4mm;
+  padding: 1.5mm;
+  border: 2px solid #b91c1c;
+  color: #b91c1c;
+  font-weight: 700;
+  text-align: center;
+}
+
+/* Header */
+.memo-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 6mm;
+  padding-bottom: 4mm;
+  border-bottom: 1.2mm solid #b08d2f;
+}
+.memo-brand { display: flex; align-items: center; gap: 4mm; }
+.memo-logo { width: 20mm; height: 20mm; border-radius: 3mm; object-fit: cover; }
+.memo-brand h1 { margin: 0; font-size: 17pt; font-weight: 800; letter-spacing: 0.2px; }
+.memo-bn { margin: 0; font-size: 11pt; color: #374151; }
+.memo-site { margin: 1mm 0 0; font-size: 10pt; font-weight: 600; color: #8a6d1d; }
+.memo-no { text-align: right; }
+.memo-title {
+  display: inline-block;
+  margin: 0 0 2mm;
+  padding: 0.8mm 3mm;
+  border: 1px solid #111827;
+  border-radius: 1.5mm;
+  font-size: 10pt;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+}
+.memo-label { margin: 0; font-size: 8.5pt; color: #4b5563; text-transform: uppercase; letter-spacing: 0.5px; }
+.memo-number { margin: 0; font-size: 20pt; font-weight: 800; font-variant-numeric: tabular-nums; line-height: 1.1; }
+.memo-date { margin: 0.5mm 0 0; font-size: 10pt; }
+
+/* Customer */
+.memo-customer {
+  display: flex;
+  justify-content: space-between;
+  gap: 6mm;
+  margin: 4mm 0;
+}
+.memo-customer dl {
+  display: grid;
+  grid-template-columns: 26mm 1fr;
+  row-gap: 0.8mm;
+  margin: 0;
+  flex: 1;
+}
+.memo-customer dt { color: #4b5563; }
+.memo-customer dd { margin: 0; }
+.memo-photo { width: 45mm; flex: none; }
+.memo-photo img { display: block; max-width: 45mm; max-height: 38mm; margin-left: auto; object-fit: contain; border-radius: 1.5mm; }
+
+/* Items */
+.memo-items { width: 100%; border-collapse: collapse; }
+.memo-items thead { display: table-header-group; } /* repeats on page 2 */
+.memo-items th {
+  padding: 1.6mm 2mm;
+  background: #f3f4f6;
+  border: 1px solid #374151;
+  font-size: 9.5pt;
+  text-align: left;
+}
+.memo-items td {
+  padding: 1.1mm 2mm;
+  border: 1px solid #374151;
+  vertical-align: top;
+  font-variant-numeric: tabular-nums;
+}
+.memo-items tr { break-inside: avoid; }
+.memo-result { font-weight: 700; }
+.memo-stamp { font-weight: 600; color: #374151; }
+.memo-typed { margin-left: 1.5mm; font-size: 8.5pt; color: #4b5563; }
+
+/* Money + check online */
+.memo-bottom {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 6mm;
+  margin-top: 4mm;
+  break-inside: avoid;
+}
+.memo-money { min-width: 62mm; }
+.memo-money > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 6mm;
+  padding: 0.8mm 0;
+  border-bottom: 1px dotted #9ca3af;
+}
+.memo-money .memo-due { font-size: 12pt; }
+.memo-note { margin: 1.5mm 0 0; font-size: 9pt; color: #374151; }
+.memo-check {
+  display: flex;
+  align-items: center;
+  gap: 4mm;
+  max-width: 105mm;
+  padding: 3mm;
+  border: 1.5px solid #b08d2f;
+  border-radius: 2.5mm;
+}
+.memo-qr { width: 32mm; height: 32mm; flex: none; image-rendering: pixelated; }
+.memo-check-title { margin: 0; font-size: 12pt; font-weight: 800; }
+.memo-check-bn { margin: 0 0 1.5mm; font-size: 10.5pt; }
+.memo-check-how { margin: 0; font-size: 9.5pt; }
+.memo-code { font-family: ui-monospace, Consolas, monospace; font-size: 11pt; letter-spacing: 1.5px; }
+
+/* Signatures */
+.memo-sign {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 14mm;
+  break-inside: avoid;
+}
+.memo-sign div { width: 55mm; border-top: 1px solid #374151; padding-top: 1mm; text-align: center; font-size: 9.5pt; }
+.memo-thanks { margin: 6mm 0 0; text-align: center; font-size: 9.5pt; color: #4b5563; }
+
 @media print {
-    body * {
-      visibility: hidden;
-    }
-  
-    .print-content, .print-content * {
-      visibility: visible;
-    }
-  
-    /* Ensure the printed content takes up the full page */
-    .print-content {
-      width: 100%;
-      max-width: none;
-      padding: 0;
-      box-shadow: none;
-      border: none;
-    }
-  
-    /* Remove any margins or unnecessary whitespace */
-    @page {
-      margin: 0;
-    }
-  
-    /* Make table borders bold for printing */
-    .print-content table,
-    .print-content th,
-    .print-content td {
-      border-width: 1px !important;
-      border-color: #222 !important;
-      border-style: solid !important;
-    }
+  /* This hides everything else during printing */
+  body * {
+    visibility: hidden;
   }
-  
+  .print-content, .print-content * {
+    visibility: visible;
+  }
+  @page {
+    size: A4 portrait;
+    margin: 10mm 12mm; /* page 2 of a long memo gets margins too */
+  }
+  html, body { background: #fff !important; }
+  .memo-page { min-height: 0; padding: 0; background: #fff; }
+  .memo-sheet { width: auto; min-height: 0; margin: 0; padding: 0; box-shadow: none; }
+  .memo-items th { background: #f3f4f6 !important; }
+  .print-content * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}
