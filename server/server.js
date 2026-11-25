@@ -82,8 +82,10 @@ const preferredPort = parsePort(process.env.PORT) || DEFAULT_PORT;
 const allowPortHunt = !process.env.PORT;
 
 const startServer = (portToTry, attemptsLeft = MAX_PORT_PROBES) => {
-    const serverInstance = app.listen(portToTry, () => {
-        console.log(`Server running on port ${portToTry}`);
+    // HOST=127.0.0.1 (the desktop app) = only this PC. Without HOST: every address, as in Docker.
+    const host = process.env.HOST || undefined;
+    const serverInstance = app.listen(portToTry, host, () => {
+        console.log(`Server running on ${host || "all addresses"}, port ${portToTry}`);
     });
 
     serverInstance.on("error", (error) => {
