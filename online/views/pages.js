@@ -105,7 +105,7 @@ const reportPage = (r) => {
 <dt>Test · পরীক্ষা</dt><dd>${esc(TYPE_LABEL[r.type] || r.type || "—")}</dd>
 ${r.company ? `<dt>Shop · দোকান</dt><dd>${esc(r.company)}</dd>` : ""}
 </dl></div>
-<div class="card"><h2>Items · গহনা</h2>${items || '<div class="meta">No items</div>'}</div>`;
+<div class="card"><h2>Items · গহনা</h2>${items || '<div class="meta">No items on this memo · এই মেমোতে কোনো গহনা নেই</div>'}</div>`;
     return layout(`Memo ${r.voucher ?? ""} · Report`, body);
 };
 

@@ -1,4 +1,5 @@
 const Order = require("../models/Order");
+const User = require("../models/User");
 const { monthRange } = require("./customerStats");
 const { dayRange } = require("./orderSummary");
 const { nextVoucher, syncVoucherCounter } = require("./memoNumber");
@@ -36,9 +37,9 @@ exports.cleanItems = cleanItems;
 
 const ITEM_TEXT_FIELDS = ["item", "weightUnite", "xray"];
 
-// Check and clean items for an edit. Returns { items, total } or { error }.
+// Check and clean items for a new or edited order. Returns { items, total } or { error }.
 // Amounts are worked out here; amounts sent by the browser are not trusted.
-const prepareEditedItems = (rawItems) => {
+const prepareItems = (rawItems) => {
     if (!Array.isArray(rawItems) || rawItems.length === 0) return { error: "Add at least one item." };
     if (rawItems.length > 200) return { error: "Too many items." };
     const items = [];
@@ -72,7 +73,7 @@ exports.updateOrder = async (id, { items, company }) => {
     const order = await Order.findById(id);
     if (!order) return null;
     if (order.deletedAt) return { error: "This order is deleted. Restore it first." };
-    const prepared = prepareEditedItems(items);
+    const prepared = prepareItems(items);
     if (prepared.error) return { error: prepared.error };
     if (company !== undefined && typeof company !== "string") return { error: "Invalid shop." };
 
@@ -95,17 +96,30 @@ exports.updateOrder = async (id, { items, company }) => {
 
 const isDuplicateVoucher = (error) => error && error.code === 11000 && /voucher/.test(error.message || "");
 
-exports.createOrder = async (orderData, items, file) => { // Add items parameter
+const ORDER_TYPES = ["hallmark", "xray"];
+const badRequest = (message) => Object.assign(new Error(message), { status: 400 });
+
+// The server checks every new order itself (Plan 17): items, customer and type.
+// Before this only the browser form checked, and 169 empty orders and 39 with no type got in.
+exports.checkNewOrder = async (orderData, items) => {
+    const type = String(orderData.type || "");
+    if (!ORDER_TYPES.includes(type)) throw badRequest("Order type must be Hallmark or X-ray.");
+    const id = Number(orderData.customerID);
+    if (!Number.isSafeInteger(id) || id <= 0) throw badRequest("Choose the customer first.");
+    if (!(await User.exists({ customerID: id, deletedAt: null }))) throw badRequest(`Customer ${id} was not found. Choose the customer again.`);
+    const prepared = prepareItems(items);
+    if (prepared.error) throw badRequest(prepared.error);
+    return prepared;
+};
+
+exports.createOrder = async (orderData, items, file) => {
     const imagePath = file ? `/uploads/${file.filename}` : null; // Or your cloud storage logic
     // The server gives the memo number; anything the browser sent is ignored (BUGS D2).
     // eslint-disable-next-line no-unused-vars
     const { voucher: _ignored, paidAmount: paidRaw, reportToken: _t, reportCode: _c, status: _s, readyAt: _r, deliveredAt: _d, statusBy: _b, parseV: _p, shopId: _shop, ...data } = orderData;
 
-    // Amounts worked out here (quantity x rate), the same way as when editing an order.
-    const cleaned = cleanItems(items).map((it) =>
-        Number.isFinite(it.quantity) && Number.isFinite(it.rate) ? { ...it, amount: round2(it.quantity * it.rate) } : it
-    );
-    const total = round2(cleaned.reduce((sum, it) => sum + (Number(it.amount) || 0), 0));
+    // Checked and cleaned; amounts worked out here (quantity x rate), the same way as when editing.
+    const { items: cleaned, total } = await exports.checkNewOrder(data, items);
 
     // Paid now (BUGS U13): empty = the full amount, as before.
     let paid = total;
@@ -119,6 +133,7 @@ exports.createOrder = async (orderData, items, file) => { // Add items parameter
         try {
             const newOrder = new Order({
                 ...data,
+                customerID: String(Number(data.customerID)),
                 contact: normalizePhone(data.contact), // 1725275114 -> 01725275114
                 voucher: await nextVoucher(),
                 items: withPurity(cleaned), // numbers only; bad values become null; + purity/stamp

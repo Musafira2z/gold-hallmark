@@ -83,7 +83,12 @@ exports.getOrders = async (req, res) => {
 
 exports.createOrder = async (req, res) => {
     try {
-        const items = JSON.parse(req.body.items); // Parse the items array
+        let items;
+        try {
+            items = typeof req.body.items === "string" ? JSON.parse(req.body.items) : req.body.items;
+        } catch {
+            return res.status(400).json({ error: "Add at least one item." });
+        }
         const order = await OrderService.createOrder(req.body, items, req.file); // Pass items to the service
         await audit(req, "order.create", order._id, `Memo ${order.voucher}: #${order.customerID} ${order.name || ""}, ${order.totalAmount} taka`);
 
