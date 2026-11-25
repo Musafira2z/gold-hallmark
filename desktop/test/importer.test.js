@@ -1,6 +1,13 @@
 const test = require("node:test");
 const assert = require("node:assert");
-const { parseRestore, importReport, photoName } = require("../src/importer");
+const { parseRestore, importReport, photoName, restoreArgs } = require("../src/importer");
+
+test("the old PC's sync progress is not brought over, so the new app sends everything again", () => {
+    const args = restoreArgs("mongodb://127.0.0.1:47117", "/b/goldhallmark-1.gz");
+    assert.ok(args.includes("--nsInclude=goldhallmark.*"));
+    assert.ok(args.includes("--nsExclude=goldhallmark.syncstates"));
+    assert.ok(args.includes("--drop"));
+});
 
 test("reads mongorestore's counts", () => {
     const out = [

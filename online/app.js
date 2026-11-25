@@ -1,6 +1,7 @@
 // The online mirror (Plan 14 / S1). Data only comes in from the shop PC (sync);
 // nothing here can change the shop's data.
 const crypto = require("crypto");
+const path = require("path");
 const express = require("express");
 const Report = require("./models/Report");
 const Account = require("./models/Account");
@@ -147,8 +148,40 @@ const securityHeaders = (_req, res, next) => {
     next();
 };
 
+// Desktop app updates (Plan 23): only these files, from a folder outside the code.
+// latest-linux.yml is only for the Linux rehearsal; the shop's Windows app reads latest.yml.
+const DESKTOP_FILE_RE = /^(latest(-linux)?\.yml|[A-Za-z0-9][A-Za-z0-9._-]*\.(exe|exe\.sig|exe\.blockmap))$/;
+const serveDesktop = (dir) => {
+    const files = express.static(dir, { dotfiles: "deny", index: false, redirect: false, fallthrough: false });
+    return (req, res, next) => {
+        if (req.method !== "GET" && req.method !== "HEAD") return next();
+        const name = req.path.replace(/^\//, "");
+        if (!DESKTOP_FILE_RE.test(name)) return res.status(404).type("text").send("Not found");
+        // A new version must be seen at once; the installer itself never changes under its name.
+        res.set("Cache-Control", /\.(yml|sig)$/.test(name) ? "no-store" : "public, max-age=86400");
+        files(req, res, (err) => {
+            if (err && err.status === 404) return res.status(404).type("text").send("Not found");
+            next(err);
+        });
+    };
+};
+
+const ROBOTS = "User-agent: *\nDisallow: /r/\nDisallow: /report\nDisallow: /login\nDisallow: /me\nDisallow: /owner\nDisallow: /api/\nDisallow: /desktop/\n";
+
+// Behind Hostinger's proxy: http -> https, and tell browsers to stay on https.
+// Only when the proxy says the visit came over http, so a proxy that never says can't cause a loop.
+const httpsOnly = (req, res, next) => {
+    const said = (req.get("x-forwarded-proto") || "").split(",")[0].trim().toLowerCase();
+    if (said === "https") res.set("Strict-Transport-Security", "max-age=31536000");
+    if (said !== "http" || req.path === "/api/health") return next();
+    if (req.method !== "GET" && req.method !== "HEAD") return res.status(403).json({ error: "Use https" });
+    return res.redirect(301, `https://${req.get("host")}${req.originalUrl}`);
+};
+
 const createApp = ({
     syncKey,
+    desktopDir = null,
+    httpsOnlyMode = false,
     limiter = createGuessLimiter(),
     loginIpLimiter = createGuessLimiter({ max: 20 }),
     loginPhoneLimiter = createGuessLimiter({ max: 5 }),
@@ -159,7 +192,10 @@ const createApp = ({
     const app = express();
     app.disable("x-powered-by");
     if (trustProxy) app.set("trust proxy", 1); // behind Hostinger's proxy: real visitor address
+    if (httpsOnlyMode) app.use(httpsOnly);
     app.use(securityHeaders);
+    app.get("/robots.txt", (_req, res) => res.type("text").send(ROBOTS));
+    if (desktopDir) app.use("/desktop", serveDesktop(path.resolve(desktopDir)));
 
     app.get("/api/health", async (_req, res) => {
         res.json({ ok: true, reports: await Report.estimatedDocumentCount() });
@@ -268,4 +304,4 @@ const createApp = ({
     return app;
 };
 
-module.exports = { createApp, createGuessLimiter, cleanIncoming, cleanAccount, cleanPayment, cleanOwner, cleanHeartbeat };
+module.exports = { DESKTOP_FILE_RE, createApp, createGuessLimiter, cleanIncoming, cleanAccount, cleanPayment, cleanOwner, cleanHeartbeat };

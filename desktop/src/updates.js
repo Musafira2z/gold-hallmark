@@ -60,6 +60,7 @@ function startUpdates(o) {
     updater.autoDownload = true;
     updater.autoInstallOnAppQuit = false; // only after our own check
     updater.disableWebInstaller = true;
+    updater.disableDifferentialDownload = true; // whole file: our website serves files simply, and the signature covers the whole file
     updater.logger = { info: () => {}, warn: (m) => log(`update: ${m}`), error: (m) => log(`update: ${m}`), debug: () => {} };
     updater.setFeedURL({ provider: "generic", url: base });
 

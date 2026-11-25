@@ -50,7 +50,12 @@ If it is lost, no update can be published; the shop would need a manual reinstal
 1. Raise `version` in `desktop/package.json`.
 2. Build (below).
 3. `docker run --rm --user $(id -u):$(id -g) -v $PWD/desktop:/d -w /d node:20 node sign-update.js dist/SylhetGoldHallmark-Setup-<version>.exe`
-4. Upload `latest.yml`, the `.exe`, its `.blockmap` and its `.sig` to the website's `desktop/` folder.
+4. `PUBLISH_SSH_PORT=65002 scripts/publish-desktop.sh <user>@<address> desktop-releases` (see `online/DEPLOY.md`, step 4).
+   It checks the signature with the app's built-in key, uploads the `.exe` and its `.sig`, and switches `latest.yml` last.
+
+**Bringing data over leaves out the old PC's sync progress** (`syncstates`), so the new app sends everything to the website again (S7).
+
+**Whole-chain rehearsal (S7):** `desktop/e2e/s7.compose.yml`: HTTPS proxy, online app and database on the test server; the app syncs the test copy and takes an update from `/desktop/`.
 
 ## Build the Windows installer (on the test server)
 

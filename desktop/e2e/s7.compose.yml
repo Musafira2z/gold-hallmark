@@ -1,0 +1,43 @@
+# S7 rehearsal (Plan 23): the whole chain on the test server.
+#   shop desktop app (test copy) --sync--> HTTPS proxy --> online app --> database (stands in for Atlas)
+#   and the desktop app's updates from https://sylhethallmark.com/desktop/
+# Run (from the repo root; /tmp/p23src holds dev.gz + photos/ as in s6b.sh):
+#   SYNC_KEY=$(openssl rand -base64 36 | tr -dc A-Za-z0-9) docker compose -f desktop/e2e/s7.compose.yml run --rm e2e
+#   SYNC_KEY=x docker compose -f desktop/e2e/s7.compose.yml down -v
+name: gold-s7
+services:
+  atlas:
+    image: mongo:7
+    tmpfs: [/data/db]
+  online:
+    build: ../../online
+    environment:
+      MONGO_URI: mongodb://atlas:27017/goldhallmark_online
+      SYNC_KEY: ${SYNC_KEY:?set SYNC_KEY}
+      TRUST_PROXY: "1"
+      DESKTOP_DIR: /releases
+    volumes: [releases:/releases:ro]
+    depends_on: [atlas]
+  proxy:
+    image: caddy:2
+    volumes:
+      - ./Caddyfile.s7:/etc/caddy/Caddyfile:ro
+      - caddy:/data
+    networks:
+      default:
+        aliases: [sylhethallmark.com]
+    depends_on: [online]
+  e2e:
+    image: gold-desktop-e2e
+    entrypoint: ["bash", "/repo/desktop/e2e/s7.sh"]
+    environment:
+      SYNC_KEY: ${SYNC_KEY:?set SYNC_KEY}
+    volumes:
+      - ../..:/repo
+      - /tmp/p23src:/src:ro
+      - releases:/releases
+      - caddy:/caddy:ro
+    depends_on: [proxy, atlas]
+volumes:
+  releases:
+  caddy:

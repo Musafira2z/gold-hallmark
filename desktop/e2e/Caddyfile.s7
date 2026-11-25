@@ -1,0 +1,12 @@
+# S7 rehearsal (Plan 23): HTTPS in front of the online app, like Hostinger's proxy.
+# The app itself sends http to https, so Caddy's own redirect is off.
+{
+	auto_https disable_redirects
+}
+sylhethallmark.com {
+	tls internal
+	reverse_proxy online:8080
+}
+http://sylhethallmark.com {
+	reverse_proxy online:8080
+}
