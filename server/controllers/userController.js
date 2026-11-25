@@ -105,3 +105,47 @@ exports.setCustomerKind = async (req, res) => {
         res.status(500).json({ error: "Could not save the customer type" });
     }
 };
+
+// ---- Online login (Plan 18). Staff and owner. The PIN is shown once and never logged. ----
+const noStore = (res) => res.set("Cache-Control", "no-store");
+
+exports.makePortalPin = async (req, res) => {
+    try {
+        const result = await UserService.makePortalPin(req.params.customerID);
+        if (!result) return res.status(404).json({ error: "Customer not found" });
+        if (result.error) return res.status(400).json({ error: result.error });
+        await audit(req, "customer.portal", result.customer._id,
+            `#${result.customer.customerID} ${result.customer.name || ""}: ${result.hadLogin ? "new online PIN (old one stopped)" : "online login turned on"}`);
+        noStore(res).json({ pin: result.pin, phone: result.phone, loginUrl: result.loginUrl });
+    } catch (error) {
+        console.error("Error making a portal PIN:", error);
+        res.status(500).json({ error: "Could not make the PIN" });
+    }
+};
+
+exports.portalOff = async (req, res) => {
+    try {
+        const result = await UserService.portalOff(req.params.customerID);
+        if (!result) return res.status(404).json({ error: "Customer not found" });
+        if (result.error) return res.status(400).json({ error: result.error });
+        await audit(req, "customer.portal", result._id, `#${result.customerID} ${result.name || ""}: online login turned off`);
+        res.json({ ok: true });
+    } catch (error) {
+        console.error("Error turning a portal login off:", error);
+        res.status(500).json({ error: "Could not turn the login off" });
+    }
+};
+
+exports.setPortalShops = async (req, res) => {
+    try {
+        const result = await UserService.setPortalShops(req.params.customerID, req.body ? req.body.shops : undefined);
+        if (!result) return res.status(404).json({ error: "Customer not found" });
+        if (result.error) return res.status(400).json({ error: result.error });
+        await audit(req, "customer.portal", result.customer._id,
+            `#${result.customer.customerID} ${result.customer.name || ""}: online shops ${result.shops.map((s) => s.name).join(", ") || "none"}`);
+        res.json({ shops: result.shops });
+    } catch (error) {
+        console.error("Error saving portal shops:", error);
+        res.status(500).json({ error: "Could not save the shops" });
+    }
+};

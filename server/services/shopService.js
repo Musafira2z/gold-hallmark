@@ -130,6 +130,7 @@ const renameShop = async (id, name) => {
     await shop.save();
     // The website shows the shop name: send these orders again.
     await Order.updateMany({ shopId: shop._id }, { $currentDate: { updatedAt: true } }, { timestamps: false });
+    await User.updateMany({ portalShops: shop._id }, { $currentDate: { updatedAt: true } }, { timestamps: false }); // portal shop name
     return { shop, before };
 };
 
@@ -143,6 +144,9 @@ const mergeShops = async (keepId, dropId) => {
     await Shop.updateOne({ _id: drop._id }, { $set: { keys: [] } });        // free the spellings first (unique)
     await Shop.updateOne({ _id: keep._id }, { $addToSet: { keys: { $each: keys } } });
     const moved = await Order.updateMany({ shopId: drop._id }, { $set: { shopId: keep._id } }); // updatedAt changes: re-sync
+    // Shop owners who had the dropped shop ticked now have the kept one (Plan 18).
+    await User.updateMany({ portalShops: drop._id }, { $addToSet: { portalShops: keep._id } });
+    await User.updateMany({ portalShops: drop._id }, { $pull: { portalShops: drop._id } });
     await Shop.deleteOne({ _id: drop._id });
     return { keep: await Shop.findById(keep._id).lean(), dropName: drop.name, moved: moved.modifiedCount };
 };
