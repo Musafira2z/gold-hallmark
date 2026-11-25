@@ -5,3 +5,5 @@ app-server/
 mongo/
 dist/
 build/vc_redist.x64.exe
+# Private key for signing updates (Plan 22). NEVER commit.
+.update-signing-key.pem

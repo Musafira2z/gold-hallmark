@@ -5,6 +5,8 @@
 set -euo pipefail
 TARGET="${1:-win}"
 MONGO_VERSION="7.0.48"   # same as the Docker app's mongo:7
+TOOLS_VERSION="100.20.1" # mongodump / mongorestore for backups (Plan 22)
+TOOLS_SHA256="5a1a8aa2c87ca0685ffdcad403601b110d495d44afe579473b8f75ec46621c80"  # from downloads.mongodb.org/tools/db/release.json
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 D="$ROOT/desktop"
 
@@ -42,6 +44,24 @@ for n in z.namelist():
     if ("/bin/" in n and base == "mongod.exe") or base == "LICENSE-Community.txt":
         open(os.path.join(sys.argv[2], base), "wb").write(z.read(n))
         print("took", n)
+PY
+  rm -rf "$TMP"
+
+  echo "== MongoDB Database Tools $TOOLS_VERSION for Windows (backups) =="
+  TZIP="mongodb-database-tools-windows-x86_64-$TOOLS_VERSION.zip"
+  TMP="$(mktemp -d)"
+  curl -fsSL -o "$TMP/$TZIP" "https://fastdl.mongodb.org/tools/db/$TZIP"
+  echo "$TOOLS_SHA256  $TMP/$TZIP" | sha256sum -c -
+  python3 - "$TMP/$TZIP" "$D/mongo" <<'PY'
+import sys, zipfile, os
+z = zipfile.ZipFile(sys.argv[1])
+for n in z.namelist():
+    base = os.path.basename(n)
+    if "/bin/" in n and base in ("mongodump.exe", "mongorestore.exe"):
+        open(os.path.join(sys.argv[2], base), "wb").write(z.read(n))
+        print("took", n)
+    if base == "LICENSE.md":
+        open(os.path.join(sys.argv[2], "LICENSE-tools.md"), "wb").write(z.read(n))
 PY
   rm -rf "$TMP"
 

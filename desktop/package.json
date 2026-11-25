@@ -9,7 +9,8 @@
   "scripts": {
     "start": "electron .",
     "test": "node --test test/",
-    "dist:win": "electron-builder --win nsis --x64"
+    "dist:win": "electron-builder --win nsis --x64",
+    "sign": "node sign-update.js"
   },
   "devDependencies": {
     "electron": "33.4.11",
@@ -47,7 +48,7 @@
     },
     "nsis": {
       "oneClick": false,
-      "perMachine": true,
+      "perMachine": false,
       "allowToChangeInstallationDirectory": false,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
@@ -55,6 +56,15 @@
       "deleteAppDataOnUninstall": false,
       "artifactName": "SylhetGoldHallmark-Setup-${version}.exe",
       "include": "build/installer.nsh"
-    }
+    },
+    "publish": [
+      {
+        "provider": "generic",
+        "url": "https://sylhethallmark.com/desktop/"
+      }
+    ]
+  },
+  "dependencies": {
+    "electron-updater": "6.3.9"
   }
 }

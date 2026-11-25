@@ -18,11 +18,39 @@ The ports are different from the Docker app (3001 / 5000 / 27017), so both can r
 |---|---|
 | `db\` | the database |
 | `photos\` | customer and memo photos |
-| `backups\` | backups (S6b) |
+| `backups\` | backups: every 6 h, newest 14 + 8 weekly, each one checked; `photos\`, `weekly\`, `backup-log.txt` |
 | `logs\` | `app.log`, `server.log`, `mongod.log` |
-| `settings.json` | `syncUrl`, `syncKey` (the website, S7), `reportBaseUrl` (the memo QR link) |
+| `settings.json` | `syncUrl`, `syncKey` (the website, S7), `reportBaseUrl` (the memo QR link), `updateUrl` (where updates come from), `backupCopyDir` (optional second copy of backups, e.g. Google Drive / pen drive) |
 
 Uninstalling or updating never deletes this folder. After changing `settings.json`, close and open the app.
+
+## Backups and bringing data over (Plan 22)
+
+- Menu **Backup**: Back up now · Open the backups folder · Bring data from the old app…
+- An empty app asks once: bring the old app's data, or start new.
+- **Bringing data over** works only into an empty app (never overwrites). Give it a Docker backup
+  (`goldhallmark-….gz`); photos come from the `photos` folder next to it. The report is in `logs\import-<time>.txt`.
+  The same works for the app's own backups on a new PC.
+- From the command line (install day):
+
+```bat
+"%LOCALAPPDATA%\Programs\Sylhet Gold Hallmark\Sylhet Gold Hallmark.exe" --import=D:\backups\goldhallmark-20261201-0900.gz
+"%LOCALAPPDATA%\Programs\Sylhet Gold Hallmark\Sylhet Gold Hallmark.exe" --backup-now
+```
+
+## Updates (Plan 22)
+
+The app checks `updateUrl` (default `https://sylhethallmark.com/desktop/`) 1 minute after start and every 6 hours.
+It installs an update **only if it carries our signature**, takes a backup first, and installs when the app is closed.
+
+**Signing key:** `desktop/.update-signing-key.pem` on the test server (git-ignored). Keep a safe copy.
+If it is lost, no update can be published; the shop would need a manual reinstall with a new key.
+
+**Publish a new version:**
+1. Raise `version` in `desktop/package.json`.
+2. Build (below).
+3. `docker run --rm --user $(id -u):$(id -g) -v $PWD/desktop:/d -w /d node:20 node sign-update.js dist/SylhetGoldHallmark-Setup-<version>.exe`
+4. Upload `latest.yml`, the `.exe`, its `.blockmap` and its `.sig` to the website's `desktop/` folder.
 
 ## Build the Windows installer (on the test server)
 
@@ -37,4 +65,4 @@ docker run --rm -e HOME=/tmp -v $PWD/desktop:/project -w /project electronuserla
 ## Tests
 
 - Unit: `cd desktop && npm test`
-- The whole app on Linux (virtual screen): see `plans/21-s6a-desktop-app.md`.
+- The whole app on Linux (virtual screen): `e2e/run.sh` (Plan 21) and `e2e/s6b.sh` (Plan 22). How to run them is at the top of each file.

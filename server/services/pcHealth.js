@@ -3,7 +3,9 @@
 const fs = require("fs/promises");
 const path = require("path");
 
-// Newest backup file (*.gz) in BACKUP_DIR, or null if there is none / no folder.
+// Newest good backup file (*.gz) in BACKUP_DIR, or null if there is none / no folder.
+// Half-written (.tmp-...) and bad (.BAD / .CHECK) files don't count (Plan 22).
+const isRealBackup = (name) => /\.gz$/i.test(name) && !name.startsWith(".") && !/\.(BAD|CHECK)\.gz$/i.test(name);
 const newestBackup = async (dir = process.env.BACKUP_DIR) => {
     if (!dir) return null;
     let names;
@@ -14,7 +16,7 @@ const newestBackup = async (dir = process.env.BACKUP_DIR) => {
     }
     let best = null;
     for (const name of names) {
-        if (!/\.gz$/i.test(name)) continue;
+        if (!isRealBackup(name)) continue;
         try {
             const st = await fs.stat(path.join(dir, name));
             if (st.isFile() && st.size > 0 && (!best || st.mtimeMs > best.at.getTime())) best = { name, at: st.mtime, size: st.size };
@@ -32,4 +34,4 @@ const heartbeat = async ({ waiting = 0, now = new Date(), dir } = {}) => ({
     backup: await newestBackup(dir),
 });
 
-module.exports = { newestBackup, heartbeat };
+module.exports = { newestBackup, heartbeat, isRealBackup };

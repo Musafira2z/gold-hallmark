@@ -106,4 +106,4 @@ async function startMongo({ mongod, dbPath, logPath, port, serverDir, log }) {
     };
 }
 
-module.exports = { startMongo, portOpen, sleep };
+module.exports = { startMongo, portOpen, sleep, loadDriver };

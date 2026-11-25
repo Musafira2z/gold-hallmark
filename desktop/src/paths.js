@@ -36,6 +36,10 @@ const DEFAULT_SETTINGS = {
     syncKey: "",
     // The link printed in the memo's QR.
     reportBaseUrl: "https://sylhethallmark.com",
+    // Where updates come from (Plan 22). Empty = no updates.
+    updateUrl: "https://sylhethallmark.com/desktop/",
+    // Optional second copy of each backup: a Google Drive folder or a pen drive. Empty = none.
+    backupCopyDir: "",
 };
 
 // settings.json: made with the defaults on first start; unknown or broken values fall back to defaults.
