@@ -4,7 +4,8 @@ const fs = require("fs");
 
 // Photos (customer + order) live in server/uploads. docker-compose maps this
 // folder to ./uploads on the PC so photos survive an update (BUGS D12).
-const uploadsDir = path.join(__dirname, "..", "uploads");
+// The desktop app sets UPLOADS_DIR to its own photo folder (Plan 21).
+const uploadsDir = process.env.UPLOADS_DIR ? path.resolve(process.env.UPLOADS_DIR) : path.join(__dirname, "..", "uploads");
 fs.mkdirSync(uploadsDir, { recursive: true });
 
 const MAX_BYTES = 5 * 1024 * 1024; // 5 MB

@@ -1,0 +1,7 @@
+# Built or downloaded by prepare.sh / electron-builder
+node_modules/
+app-client/
+app-server/
+mongo/
+dist/
+build/vc_redist.x64.exe

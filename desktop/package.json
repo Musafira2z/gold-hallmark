@@ -1,0 +1,60 @@
+{
+  "name": "sylhet-gold-hallmark",
+  "productName": "Sylhet Gold Hallmark",
+  "version": "1.0.0",
+  "description": "Sylhet Gold Hallmark Center shop app",
+  "author": "Sylhet Gold Hallmark Center",
+  "private": true,
+  "main": "src/main.js",
+  "scripts": {
+    "start": "electron .",
+    "test": "node --test test/",
+    "dist:win": "electron-builder --win nsis --x64"
+  },
+  "devDependencies": {
+    "electron": "33.4.11",
+    "electron-builder": "25.1.8"
+  },
+  "build": {
+    "appId": "com.sylhethallmark.shop",
+    "productName": "Sylhet Gold Hallmark",
+    "files": [
+      "src/**/*",
+      "build/icon.png",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "app-server",
+        "to": "app-server"
+      },
+      {
+        "from": "app-client",
+        "to": "app-client"
+      },
+      {
+        "from": "mongo",
+        "to": "mongo"
+      }
+    ],
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "win": {
+      "target": "nsis",
+      "icon": "build/icon.png"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": true,
+      "allowToChangeInstallationDirectory": false,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Sylhet Gold Hallmark",
+      "deleteAppDataOnUninstall": false,
+      "artifactName": "SylhetGoldHallmark-Setup-${version}.exe",
+      "include": "build/installer.nsh"
+    }
+  }
+}
