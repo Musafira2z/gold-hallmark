@@ -28,7 +28,8 @@ echo "== old app's backup (the test copy, as the Docker app writes it) =="
 rm -rf /tmp/srcdb /tmp/oldapp && mkdir -p /tmp/srcdb /tmp/oldapp
 mongod --dbpath /tmp/srcdb --port 27999 --bind_ip 127.0.0.1 --logpath /tmp/srcdb.log --fork >/dev/null
 mongorestore --uri=mongodb://127.0.0.1:27999 --archive=/src/dev.gz --gzip --quiet --nsFrom='goldhallmark_dev.*' --nsTo='goldhallmark.*'
-COUNTS_JS='JSON.stringify(Object.fromEntries(db.getCollectionNames().filter(n=>!n.startsWith("system.")).sort().map(n=>[n,db.getCollection(n).countDocuments()])))'
+# syncstates (how far the old PC synced) is not brought over on purpose.
+COUNTS_JS='JSON.stringify(Object.fromEntries(db.getCollectionNames().filter(n=>!n.startsWith("system.")&&n!=="syncstates").sort().map(n=>[n,db.getCollection(n).countDocuments()])))'
 SRC_COUNTS=$(q 27999 "$COUNTS_JS")
 SRC_ORDERS=$(q 27999 'db.orders.countDocuments()')
 SRC_MAXV=$(q 27999 'db.orders.find({voucher:{$gt:1000000}}).sort({voucher:-1}).limit(1).toArray().map(o=>o.voucher)[0]||1000000')

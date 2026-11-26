@@ -9,7 +9,9 @@ What it does now (Plan 14 / S1):
   After 10 wrong tries in 15 minutes from the same address, the lookup is blocked.
 - `POST /api/sync/orders`: the shop PC sends orders here with `SYNC_KEY`.
 
-Later: customer login (S4) and the owner's phone dashboard (S5).
+Also: karigor / shop owner login (S4), the owner's phone app (S5), and the desktop app's updates at `/desktop/` (S7).
+
+**Putting it online:** see [DEPLOY.md](DEPLOY.md). **Checking a live site:** `scripts/smoke-online.sh https://sylhethallmark.com`.
 
 ## Settings (`.env`)
 
@@ -18,7 +20,8 @@ Later: customer login (S4) and the owner's phone dashboard (S5).
 | `MONGO_URI` | Online database (MongoDB Atlas) |
 | `SYNC_KEY` | Long random secret, at least 24 characters. It must be the same on the shop PC |
 | `PORT` | Default 8080 |
-| `TRUST_PROXY` | `1` when running behind Hostinger's proxy |
+| `TRUST_PROXY` | `1` when running behind Hostinger's proxy. It also sends `http://` visits to `https://` |
+| `DESKTOP_DIR` | Folder with the desktop app's updates, served at `/desktop/` (Plan 23) |
 
 On the shop PC (server `.env`):
 - `SYNC_URL`: this site's address.

@@ -5,6 +5,15 @@ const fsp = require("fs/promises");
 const path = require("path");
 const { run, tool, DB } = require("./backup");
 
+// Not brought over: how far the old PC had synced. The new app starts its own sync from zero,
+// so everything reaches the (maybe new) website again. Sending twice is harmless (saved by id).
+const NOT_BROUGHT = ["syncstates"];
+
+const restoreArgs = (uri, file) => [
+    `--uri=${uri}`, `--archive=${file}`, "--gzip", "--drop", `--nsInclude=${DB}.*`,
+    ...NOT_BROUGHT.map((c) => `--nsExclude=${DB}.${c}`),
+];
+
 // Collections that make an app "not empty".
 const OWN_DATA = ["orders", "users", "staffs"];
 
@@ -85,9 +94,7 @@ async function importBackup(o) {
     await o.stopServer();
     let restore;
     try {
-        restore = await run(tool(toolsDir, "mongorestore"), [
-            `--uri=${uri}`, `--archive=${file}`, "--gzip", "--drop", `--nsInclude=${DB}.*`,
-        ]);
+        restore = await run(tool(toolsDir, "mongorestore"), restoreArgs(uri, file));
     } catch (error) {
         await o.startServer();
         throw error;
@@ -137,4 +144,4 @@ async function importBackup(o) {
     return { ...report, reportFile };
 }
 
-module.exports = { importBackup, isEmpty, parseRestore, importReport, photoName };
+module.exports = { importBackup, restoreArgs, isEmpty, parseRestore, importReport, photoName };
